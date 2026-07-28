@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Control de Tiempos BIA</title>
+<style>
+:root{--bg:#f4f7fb;--card:#fff;--p:#173b63;--p2:#0f6aa8;--ok:#14966d;--warn:#e69a17;--danger:#c43d32;--text:#1f2937;--muted:#667085;--border:#dce5ee}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
+header{background:linear-gradient(135deg,var(--p),var(--p2));color:#fff;padding:18px 24px;display:flex;justify-content:space-between;gap:15px;align-items:center;flex-wrap:wrap}
+header h1{margin:0;font-size:24px}.user{display:flex;align-items:center;gap:10px}.user button{background:#fff;color:var(--p)}
+.container{max-width:1500px;margin:auto;padding:20px}.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:17px;margin-bottom:18px;box-shadow:0 8px 24px rgba(23,59,99,.07)}
+h2{margin:0 0 14px;color:var(--p);font-size:20px}.note{color:var(--muted);font-size:13px}.statusbar{padding:10px 13px;border-radius:10px;background:#ecfdf3;color:#067647;margin-bottom:16px;font-weight:700}
+.workers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.worker{border:1px solid var(--border);border-radius:14px;padding:15px;background:#fbfdff}.worker.active{border-color:var(--p2);box-shadow:0 0 0 2px rgba(15,106,168,.08)}
+.worker h3{margin:0 0 10px;color:var(--p)}.form{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}label{display:block;font-size:12px;font-weight:700;margin:5px 0}
+input,select{width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;background:#fff}.timer{text-align:center;font-size:34px;font-weight:900;color:var(--p);padding:12px 0 3px}.desc{text-align:center;color:var(--muted);font-size:12px;min-height:18px}
+.actions{display:flex;justify-content:center;gap:7px;flex-wrap:wrap;margin-top:10px}button{border:0;border-radius:8px;padding:9px 12px;font-weight:800;cursor:pointer}.primary{background:var(--p2);color:#fff}.warn{background:var(--warn);color:#fff}.ok{background:var(--ok);color:#fff}.danger{background:var(--danger);color:#fff}.light{background:#eaf1f7;color:var(--p)}
+table{width:100%;border-collapse:collapse;min-width:1000px}th,td{padding:9px;border-bottom:1px solid var(--border);font-size:12px;text-align:left}th{background:#f5f8fb;color:var(--p)}.table{overflow:auto}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#eaf1f7;color:var(--p);font-weight:700}.conflict{background:#fff4e5;color:#9a6700;padding:10px;border-radius:8px;margin-top:8px;display:none}
+@media(max-width:950px){.workers{grid-template-columns:1fr}.form{grid-template-columns:1fr 1fr}}@media(max-width:570px){.form{grid-template-columns:1fr}.container{padding:12px}}
+
+.network{display:inline-block;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:800}.network.online{background:#dcfae6;color:#067647}.network.offline{background:#fee4e2;color:#b42318}.install-btn{background:#fff;color:#173b63;border:1px solid #d0d5dd;margin:0;width:auto}.update-bar{position:fixed;left:12px;right:12px;bottom:12px;z-index:9999;background:#173b63;color:#fff;padding:12px 16px;border-radius:12px;box-shadow:0 8px 30px #0004;text-align:center}.update-bar button{margin-left:10px;background:#fff;color:#173b63;width:auto;padding:7px 11px}
+</style>
+
+  <link rel="manifest" href="./manifest.webmanifest">
+  <meta name="theme-color" content="#173b63">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+</head>
+<body>
+<header><div><h1>Control de Tiempos BIA Honduras</h1><div style="opacity:.85;font-size:13px">Supabase es la fuente única de información</div></div><div class="user"><span id="networkStatus" class="network"></span><button id="installApp" class="install-btn" hidden>Instalar app</button><span id="userEmail"></span><button onclick="window.salir()">Cerrar sesión</button></div></header>
+<div class="container">
+  <div id="conexion" class="statusbar">Conectando con la base de datos…</div>
+  <section class="card"><h2>Preparaciones en ejecución</h2><div class="note">Cada acción se valida en el servidor. Un segundo dispositivo no puede finalizar o modificar una versión antigua.</div><div id="prepWorkers" class="workers"></div></section>
+  <section class="card"><h2>Actividades en ejecución</h2><div id="actWorkers" class="workers"></div></section>
+  <section class="card"><h2>Historial de preparaciones</h2><div class="table"><table><thead><tr><th>Fecha</th><th>Empleado</th><th>Zona</th><th>Tipo</th><th>Facturas</th><th>Libras</th><th>Tiempo</th><th>Finalizado por</th></tr></thead><tbody id="prepHistory"></tbody></table></div></section>
+  <section class="card"><h2>Historial de actividades</h2><div class="table"><table><thead><tr><th>Fecha</th><th>Empleado</th><th>Actividad</th><th>Tiempo</th><th>Finalizado por</th></tr></thead><tbody id="actHistory"></tbody></table></div></section>
+</div>
+<script type="module" src="./cronometros.js"></script>
+<script src="./pwa.js" defer></script>
+</body></html>
