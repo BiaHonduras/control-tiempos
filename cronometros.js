@@ -40,6 +40,46 @@ function tarjetaAct(emp){
 document.getElementById('prepWorkers').innerHTML=empleados.map(tarjetaPrep).join('');
 document.getElementById('actWorkers').innerHTML=empleados.map(tarjetaAct).join('');
 
+
+function detalleTimer(t){
+ const d=t.datos||{};
+ if(t.categoria==='preparacion') return `${d.zona||'Sin zona'} · ${d.tipo||'Sin tipo'} · ${d.facturas||0} facturas · ${Number(d.libras||0).toFixed(2)} lb`;
+ return d.actividad||'Actividad sin detalle';
+}
+function renderActivosSuperiores(){
+ const dock=document.getElementById('activeDock'),list=document.getElementById('activeList'),count=document.getElementById('activeCount');
+ if(!dock||!list||!count)return;
+ const activos=[...timers.values()].sort((a,b)=>String(a.empleado).localeCompare(String(b.empleado)));
+ count.textContent=String(activos.length);
+ dock.classList.toggle('visible',activos.length>0);
+ list.innerHTML=activos.map(t=>{
+  const paused=t.estado==='pausado';
+  const catLabel=t.categoria==='preparacion'?'Preparación':'Actividad';
+  const pref=t.categoria==='preparacion'?'prep':'act';
+  return `<article class="active-item ${paused?'paused':''}" data-active-id="${t.id}">
+    <div class="active-item-main"><div class="active-item-top"><span class="active-kind">${catLabel}</span><span class="active-person">${esc(t.empleado)}</span></div><div class="active-detail">${esc(detalleTimer(t))}</div></div>
+    <div><div class="active-clock" data-dock-clock="${t.id}">${fmt(segundosActuales(t))}</div><div class="active-state">${paused?'PAUSADO':'EN EJECUCIÓN'}</div></div>
+    <div class="active-quick">
+      <button class="focus-btn" data-focus-card="${pref}|${esc(t.empleado)}">Ver detalle</button>
+      ${paused?`<button class="primary" data-requires-online data-action="resume" data-cat="${t.categoria}" data-emp="${esc(t.empleado)}">Continuar</button>`:`<button class="warn" data-requires-online data-action="pause" data-cat="${t.categoria}" data-emp="${esc(t.empleado)}">Pausar</button>`}
+      <button class="ok" data-requires-online data-action="finish" data-cat="${t.categoria}" data-emp="${esc(t.empleado)}">Finalizar</button>
+    </div>
+  </article>`;
+ }).join('');
+}
+
+document.getElementById('dockToggle')?.addEventListener('click',()=>{
+ const dock=document.getElementById('activeDock');
+ dock.classList.toggle('collapsed');
+ document.getElementById('dockToggle').textContent=dock.classList.contains('collapsed')?'Mostrar':'Ocultar';
+});
+document.addEventListener('click',e=>{
+ const b=e.target.closest('[data-focus-card]');if(!b)return;
+ const [pref,emp]=b.dataset.focusCard.split('|');
+ const card=document.getElementById(`card-${pref}-${slug(emp)}`);
+ if(card){card.scrollIntoView({behavior:'smooth',block:'center'});card.animate([{boxShadow:'0 0 0 4px rgba(15,106,168,.35)'},{boxShadow:'0 0 0 0 rgba(15,106,168,0)'}],{duration:1200});}
+});
+
 function datosFormulario(cat,emp){
  const id=slug(emp);
  if(cat==='preparacion'){
@@ -114,14 +154,17 @@ async function cargarTodo(){
   supabase.from('historial_actividades').select('*').order('created_at',{ascending:false}).limit(200)
  ]);
  if(e1||e2||e3) throw e1||e2||e3;
- limpiarTarjetas();(activos||[]).forEach(aplicarTimer);
+ limpiarTarjetas();(activos||[]).forEach(aplicarTimer);renderActivosSuperiores();
  document.getElementById('prepHistory').innerHTML=(prep||[]).map(r=>`<tr><td>${new Date(r.created_at).toLocaleString('es-HN')}</td><td>${esc(r.empleado)}</td><td>${esc(r.zona)}</td><td>${esc(r.tipo)}</td><td>${r.facturas}</td><td>${Number(r.libras).toFixed(2)}</td><td>${fmt(r.segundos)}</td><td>${esc(r.finalizado_por_email||'')}</td></tr>`).join('');
  document.getElementById('actHistory').innerHTML=(acts||[]).map(r=>`<tr><td>${new Date(r.created_at).toLocaleString('es-HN')}</td><td>${esc(r.empleado)}</td><td>${esc(r.actividad)}</td><td>${fmt(r.segundos)}</td><td>${esc(r.finalizado_por_email||'')}</td></tr>`).join('');
  document.getElementById('conexion').textContent='Conectado. Datos sincronizados con Supabase.';
 }
 setInterval(()=>timers.forEach(t=>{
  const id=slug(t.empleado),pref=t.categoria==='preparacion'?'prep':'act',el=document.getElementById(`timer-${pref}-${id}`);
- if(el)el.textContent=fmt(segundosActuales(t));
+ const value=fmt(segundosActuales(t));
+ if(el)el.textContent=value;
+ const dockClock=document.querySelector(`[data-dock-clock="${t.id}"]`);
+ if(dockClock)dockClock.textContent=value;
 }),1000);
 
 const ses=await obtenerSesion();

@@ -31,3 +31,11 @@ ARCHIVOS PWA
 
 PARA GENERAR UN APK/AAB
 Después de publicar y verificar la PWA, puede envolverse como Trusted Web Activity usando PWABuilder o Bubblewrap. Para Play Store también se necesita Digital Asset Links y firma de Android. La PWA instalada desde Chrome no necesita APK.
+
+
+NOVEDAD V1.1
+- Ventana superior fija tipo aplicación de pedidos.
+- Muestra todos los cronómetros activos y pausados.
+- Tiempo en vivo, empleado, detalle y estado.
+- Botones rápidos: ver detalle, pausar/continuar y finalizar.
+- Sincronización automática mediante Supabase Realtime.

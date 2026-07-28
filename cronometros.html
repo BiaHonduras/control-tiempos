@@ -19,6 +19,12 @@ table{width:100%;border-collapse:collapse;min-width:1000px}th,td{padding:9px;bor
 @media(max-width:950px){.workers{grid-template-columns:1fr}.form{grid-template-columns:1fr 1fr}}@media(max-width:570px){.form{grid-template-columns:1fr}.container{padding:12px}}
 
 .network{display:inline-block;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:800}.network.online{background:#dcfae6;color:#067647}.network.offline{background:#fee4e2;color:#b42318}.install-btn{background:#fff;color:#173b63;border:1px solid #d0d5dd;margin:0;width:auto}.update-bar{position:fixed;left:12px;right:12px;bottom:12px;z-index:9999;background:#173b63;color:#fff;padding:12px 16px;border-radius:12px;box-shadow:0 8px 30px #0004;text-align:center}.update-bar button{margin-left:10px;background:#fff;color:#173b63;width:auto;padding:7px 11px}
+
+.active-dock{position:sticky;top:0;z-index:900;background:rgba(244,247,251,.96);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);box-shadow:0 8px 22px rgba(23,59,99,.12);display:none}
+.active-dock.visible{display:block}.active-dock-inner{max-width:1500px;margin:auto;padding:10px 20px}.active-dock-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}.active-dock-title{font-weight:900;color:var(--p);display:flex;align-items:center;gap:8px}.live-dot{width:10px;height:10px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 5px rgba(20,150,109,.14);animation:pulse 1.5s infinite}.active-count{font-size:12px;background:var(--p);color:#fff;padding:4px 8px;border-radius:999px}.dock-toggle{background:#eaf1f7;color:var(--p);padding:6px 10px}.active-list{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 6px;scrollbar-width:thin}.active-dock.collapsed .active-list{display:none}.active-item{flex:0 0 min(460px,88vw);background:#fff;border:1px solid var(--border);border-left:5px solid var(--ok);border-radius:13px;padding:11px 12px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;box-shadow:0 5px 16px rgba(23,59,99,.08)}.active-item.paused{border-left-color:var(--warn)}.active-item-main{min-width:0}.active-item-top{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.active-kind{font-size:10px;font-weight:900;text-transform:uppercase;padding:3px 6px;border-radius:999px;background:#eaf1f7;color:var(--p)}.active-person{font-weight:900;color:var(--p)}.active-detail{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:4px}.active-clock{font-size:25px;font-weight:900;color:var(--p);font-variant-numeric:tabular-nums;text-align:right}.active-state{font-size:10px;text-align:right;color:var(--muted);font-weight:800}.active-quick{grid-column:1/-1;display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}.active-quick button{padding:7px 10px;font-size:11px}.focus-btn{background:#eaf1f7;color:var(--p)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
+@media(max-width:570px){.active-dock-inner{padding:9px 12px}.active-item{flex-basis:92vw}.active-clock{font-size:22px}}
+
 </style>
 
   <link rel="manifest" href="./manifest.webmanifest">
@@ -30,6 +36,15 @@ table{width:100%;border-collapse:collapse;min-width:1000px}th,td{padding:9px;bor
 </head>
 <body>
 <header><div><h1>Control de Tiempos BIA Honduras</h1><div style="opacity:.85;font-size:13px">Supabase es la fuente única de información</div></div><div class="user"><span id="networkStatus" class="network"></span><button id="installApp" class="install-btn" hidden>Instalar app</button><span id="userEmail"></span><button onclick="window.salir()">Cerrar sesión</button></div></header>
+<section id="activeDock" class="active-dock" aria-live="polite">
+  <div class="active-dock-inner">
+    <div class="active-dock-head">
+      <div class="active-dock-title"><span class="live-dot"></span> En proceso ahora <span id="activeCount" class="active-count">0</span></div>
+      <button id="dockToggle" class="dock-toggle" type="button">Ocultar</button>
+    </div>
+    <div id="activeList" class="active-list"></div>
+  </div>
+</section>
 <div class="container">
   <div id="conexion" class="statusbar">Conectando con la base de datos…</div>
   <section class="card"><h2>Preparaciones en ejecución</h2><div class="note">Cada acción se valida en el servidor. Un segundo dispositivo no puede finalizar o modificar una versión antigua.</div><div id="prepWorkers" class="workers"></div></section>
