@@ -39,3 +39,10 @@ NOVEDAD V1.1
 - Tiempo en vivo, empleado, detalle y estado.
 - Botones rápidos: ver detalle, pausar/continuar y finalizar.
 - Sincronización automática mediante Supabase Realtime.
+
+
+NUEVO EN V1.2 - ADMINISTRACIÓN DE COLABORADORES
+1. Ejecute actualizacion_v1_2_colaboradores_admin.sql.
+2. Edite al final del SQL el correo del administrador y ejecute ese INSERT.
+3. Inicie sesión con ese usuario. Aparecerá el botón Administrar colaboradores.
+4. Puede crear, editar, activar y desactivar nombres. No permite editar/desactivar mientras tenga un cronómetro activo.
