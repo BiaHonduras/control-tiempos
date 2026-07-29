@@ -1,7 +1,8 @@
-const CACHE_NAME='bia-tiempos-v1.2.0';
+const CACHE_NAME='bia-control-v1.5.0';
 const APP_SHELL=[
   './','./index.html','./cronometros.html','./cronometros.js','./supabase-config.js',
-  './pwa.js','./offline.html','./manifest.webmanifest',
+  './pwa.js','./offline.html',
+  './assets/bia-honduras-logo.png','./manifest.webmanifest',
   './icons/icon-192.png','./icons/icon-512.png','./icons/maskable-512.png'
 ];
 self.addEventListener('install',event=>{

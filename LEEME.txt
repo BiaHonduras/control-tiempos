@@ -21,3 +21,7 @@ CONTROL DE DUPLICADOS
 - El historial tiene timer_id UNIQUE.
 - El primer cierre válido se guarda; cualquier segundo intento recibe conflicto.
 - Realtime actualiza los demás dispositivos.
+
+
+V1.4 ACTIVIDADES COMPARTIDAS
+Ejecute actualizacion_v1_4_actividades_compartidas.sql. Para Walmart, La Colonia, carga y descarga de contenedores aparecerán casillas de selección múltiple.

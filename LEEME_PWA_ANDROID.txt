@@ -46,3 +46,10 @@ NUEVO EN V1.2 - ADMINISTRACIÓN DE COLABORADORES
 2. Edite al final del SQL el correo del administrador y ejecute ese INSERT.
 3. Inicie sesión con ese usuario. Aparecerá el botón Administrar colaboradores.
 4. Puede crear, editar, activar y desactivar nombres. No permite editar/desactivar mientras tenga un cronómetro activo.
+
+
+VERSIÓN 1.3
+- Un solo formulario desplegable para Preparación de pedidos.
+- Un solo formulario desplegable para Actividades.
+- Nuevo catálogo de 13 actividades operativas.
+- Se mantienen múltiples cronómetros simultáneos y la barra superior de procesos activos.

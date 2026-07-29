@@ -1,0 +1,15 @@
+BIA HONDURAS - CONTROL DE TIEMPOS PWA v1.5
+
+Esta versión incorpora el logotipo oficial en:
+- Pantalla de ingreso.
+- Encabezado principal.
+- Pie de página.
+- Iconos instalables de Android.
+
+PUBLICACIÓN
+1. Reemplazar todos los archivos de la versión anterior.
+2. Conservar la estructura de carpetas, especialmente assets/ e icons/.
+3. Publicar mediante HTTPS o GitHub Pages.
+4. En Android, cerrar y volver a abrir la app para recibir la actualización v1.5.
+
+La lógica de Supabase, control de versiones, actividades compartidas y prevención de duplicados se mantiene.
