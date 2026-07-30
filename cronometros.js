@@ -38,7 +38,7 @@ function segundosActuales(t){
 function opcionesColaboradores(){return `<option value="">Seleccione un colaborador</option>${colaboradores.map(c=>`<option value="${c.id}">${esc(c.nombre)}</option>`).join('')}`}
 function botones(cat){return `<button class="primary" data-requires-online data-action="start" data-cat="${cat}">Iniciar</button><button class="warn" data-requires-online data-action="pause" data-cat="${cat}">Pausar</button><button class="primary" data-requires-online data-action="resume" data-cat="${cat}">Continuar</button><button class="ok" data-requires-online data-action="finish" data-cat="${cat}">Finalizar</button><button class="danger" data-requires-online data-action="cancel" data-cat="${cat}">Cancelar</button>`}
 function formularioPrep(){return `<article class="worker single-worker" id="card-prep"><h3>Preparación de pedidos</h3><div class="form"><div><label>Colaborador</label><select id="prep-colaborador">${opcionesColaboradores()}</select></div><div><label>Fecha</label><input id="prep-fecha" type="date" value="${hoy()}"></div><div><label>Zona</label><input id="prep-zona" placeholder="Zona o gira"></div><div><label>Tipo</label><select id="prep-tipo"><option value="">Seleccione</option>${tipos.map(x=>`<option>${x}</option>`).join('')}</select></div><div><label>Facturas</label><input id="prep-facturas" type="number" min="1"></div><div><label>Libras de la gira</label><input id="prep-libras" type="number" min="0" step=".01"></div></div><div class="timer" id="timer-prep">00:00:00</div><div class="desc" id="desc-prep">Seleccione un colaborador</div><div class="conflict" id="conflict-prep"></div><div class="actions">${botones('preparacion')}</div></article>`}
-function formularioAct(){return `<article class="worker single-worker" id="card-act"><h3>Registro de actividad</h3><div class="form"><div id="act-single-wrap"><label>Colaborador</label><select id="act-colaborador">${opcionesColaboradores()}</select></div><div><label>Fecha</label><input id="act-fecha" type="date" value="${hoy()}"></div><div style="grid-column:span 2"><label>Actividad</label><select id="act-tipo"><option value="">Seleccione</option>${actividades.map(x=>`<option>${x}</option>`).join('')}</select></div><div id="act-shared-wrap" class="shared-selector" style="display:none;grid-column:1/-1"><label>Colaboradores participantes</label><div class="participant-grid">${colaboradores.map(c=>`<label class="participant-option"><input type="checkbox" name="act-participante" value="${c.id}"> <span>${esc(c.nombre)}</span></label>`).join('')}</div><small>Seleccione dos o más colaboradores para una actividad compartida.</small></div></div><div class="timer" id="timer-act">00:00:00</div><div class="desc" id="desc-act">Seleccione un colaborador</div><div class="conflict" id="conflict-act"></div><div class="actions">${botones('actividad')}</div></article>`}
+function formularioAct(){return `<article class="worker single-worker" id="card-act"><h3>Registro de actividad</h3><div class="form"><div id="act-single-wrap"><label>Colaborador</label><select id="act-colaborador">${opcionesColaboradores()}</select></div><div><label>Fecha</label><input id="act-fecha" type="date" value="${hoy()}"></div><div style="grid-column:span 2"><label>Actividad</label><select id="act-tipo"><option value="">Seleccione</option>${actividades.map(x=>`<option>${x}</option>`).join('')}</select></div><div id="act-shared-wrap" class="shared-selector" style="display:none;grid-column:1/-1"><label>Colaboradores participantes</label><div class="participant-grid">${colaboradores.map(c=>`<label class="participant-option"><input type="checkbox" name="act-participante" value="${c.id}"> <span>${esc(c.nombre)}</span></label>`).join('')}</div><small>Seleccione dos o más colaboradores para una actividad compartida.</small></div></div><div class="timer" id="timer-act">00:00:00</div><div class="desc" id="desc-act">Seleccione un colaborador</div><div class="conflict" id="conflict-act"></div><div class="actions">${botones('actividad')}<button class="light" type="button" id="nuevaActividadBtn">Nueva actividad</button></div></article>`}
 function renderColaboradores(){
  const prepSel=document.getElementById('prep-colaborador')?.value||'';
  const actSel=document.getElementById('act-colaborador')?.value||'';
@@ -48,6 +48,40 @@ function renderColaboradores(){
  if(colaboradores.some(c=>c.id===actSel))document.getElementById('act-colaborador').value=actSel;
  actualizarFormularioSeleccionado('preparacion');actualizarFormularioSeleccionado('actividad');
 }
+
+function idsOcupados(){
+ const set=new Set();
+ timers.forEach(t=>participantesIds(t).forEach(id=>set.add(id)));
+ return set;
+}
+function actualizarDisponibilidadColaboradores(){
+ const ocupados=idsOcupados();
+ [document.getElementById('prep-colaborador'),document.getElementById('act-colaborador')].forEach(sel=>{
+  if(!sel)return;
+  [...sel.options].forEach(opt=>{
+   if(!opt.value)return;
+   const actual=opt.value===sel.value;
+   opt.disabled=ocupados.has(opt.value)&&!actual;
+   const c=colaboradores.find(x=>x.id===opt.value);
+   if(c)opt.textContent=c.nombre+(ocupados.has(opt.value)?' — ocupado':'');
+  });
+ });
+ document.querySelectorAll('input[name="act-participante"]').forEach(chk=>{
+  const actual=chk.checked;
+  chk.disabled=ocupados.has(chk.value)&&!actual;
+  chk.closest('label')?.classList.toggle('participant-busy',ocupados.has(chk.value));
+ });
+}
+function limpiarFormularioActividad(){
+ document.getElementById('act-colaborador').value='';
+ document.getElementById('act-tipo').value='';
+ document.getElementById('act-fecha').value=hoy();
+ document.querySelectorAll('input[name="act-participante"]').forEach(x=>x.checked=false);
+ actualizarModoActividad();
+ actualizarFormularioSeleccionado('actividad');
+ actualizarDisponibilidadColaboradores();
+}
+
 function actividadEsCompartida(){return actividadesCompartidas.has(document.getElementById('act-tipo')?.value||'')}
 function idsActividadSeleccionados(){return actividadEsCompartida()?[...document.querySelectorAll('input[name="act-participante"]:checked')].map(x=>x.value):[document.getElementById('act-colaborador')?.value||''].filter(Boolean)}
 function idSeleccionado(cat){return cat==='preparacion'?(document.getElementById('prep-colaborador')?.value||''):(idsActividadSeleccionados()[0]||document.getElementById('act-colaborador')?.value||'')}
@@ -64,20 +98,119 @@ function aplicarTimerFormulario(t){
  if(t.categoria==='preparacion'){document.getElementById('prep-fecha').value=d.fecha_preparacion||hoy();document.getElementById('prep-zona').value=d.zona||'';document.getElementById('prep-tipo').value=d.tipo||'';document.getElementById('prep-facturas').value=d.facturas||'';document.getElementById('prep-libras').value=d.libras||''}else{document.getElementById('act-fecha').value=d.fecha||hoy();document.getElementById('act-tipo').value=d.actividad||'';actualizarModoActividad();if(Array.isArray(d.participantes_ids)){document.querySelectorAll('input[name="act-participante"]').forEach(x=>x.checked=d.participantes_ids.includes(x.value))}else if(t.colaborador_id){document.getElementById('act-colaborador').value=t.colaborador_id}}
 }
 function detalleTimer(t){const d=t.datos||{};return t.categoria==='preparacion'?`${d.zona||'Sin zona'} · ${d.tipo||'Sin tipo'} · ${d.facturas||0} facturas · ${Number(d.libras||0).toFixed(2)} lb`:`${d.actividad||'Actividad sin detalle'}${Array.isArray(d.participantes_nombres)&&d.participantes_nombres.length>1?' · '+d.participantes_nombres.join(', '):''}`}
-function renderActivosSuperiores(){const dock=document.getElementById('activeDock'),list=document.getElementById('activeList'),count=document.getElementById('activeCount');const activos=[...timers.values()].sort((a,b)=>String(a.empleado).localeCompare(String(b.empleado)));count.textContent=activos.length;dock.classList.toggle('visible',activos.length>0);list.innerHTML=activos.map(t=>{const paused=t.estado==='pausado';const pref=t.categoria==='preparacion'?'prep':'act';return `<article class="active-item ${paused?'paused':''}"><div class="active-item-main"><div class="active-item-top"><span class="active-kind">${t.categoria==='preparacion'?'Preparación':'Actividad'}</span><span class="active-person">${esc(t.empleado)}</span></div><div class="active-detail">${esc(detalleTimer(t))}</div></div><div><div class="active-clock" data-dock-clock="${t.id}">${fmt(segundosActuales(t))}</div><div class="active-state">${paused?'PAUSADO':'EN EJECUCIÓN'}</div></div><div class="active-quick">${esAdmin?`<button class="focus-btn" data-focus-card="${pref}|${t.colaborador_id}">Ver detalle</button>${paused?`<button class="primary" data-action="resume" data-cat="${t.categoria}" data-collab="${t.colaborador_id}">Continuar</button>`:`<button class="warn" data-action="pause" data-cat="${t.categoria}" data-collab="${t.colaborador_id}">Pausar</button>`}<button class="ok" data-action="finish" data-cat="${t.categoria}" data-collab="${t.colaborador_id}">Finalizar</button>`:`<span class="badge">Solo lectura</span>`}</div></article>`}).join('')}
-
+function renderActivosSuperiores(){
+ const dock=document.getElementById('activeDock');
+ const list=document.getElementById('activeList');
+ const count=document.getElementById('activeCount');
+ const activos=[...timers.values()].sort((a,b)=>String(a.empleado).localeCompare(String(b.empleado),'es'));
+ count.textContent=activos.length;
+ dock.classList.toggle('visible',activos.length>0);
+ list.innerHTML=activos.map(t=>{
+  const paused=t.estado==='pausado';
+  return `<article class="active-item ${paused?'paused':''}" data-active-timer="${t.id}">
+   <div class="active-item-main">
+    <div class="active-item-top">
+     <span class="active-kind">${t.categoria==='preparacion'?'Preparación':'Actividad'}</span>
+     <span class="active-person">${esc(t.empleado)}</span>
+    </div>
+    <div class="active-detail">${esc(detalleTimer(t))}</div>
+   </div>
+   <div>
+    <div class="active-clock" data-dock-clock="${t.id}">${fmt(segundosActuales(t))}</div>
+    <div class="active-state">${paused?'PAUSADO':'EN EJUCIÓN'}</div>
+   </div>
+   <div class="active-quick">
+    ${esAdmin?`
+     <button class="focus-btn" data-focus-timer="${t.id}">Ver detalle</button>
+     ${paused
+      ?`<button class="primary" data-direct-action="resume" data-timer-id="${t.id}" data-version="${t.version}">Continuar</button>`
+      :`<button class="warn" data-direct-action="pause" data-timer-id="${t.id}" data-version="${t.version}">Pausar</button>`}
+     <button class="ok" data-direct-action="finish" data-timer-id="${t.id}" data-version="${t.version}">Finalizar</button>
+    `:`<span class="badge">Solo lectura</span>`}
+   </div>
+  </article>`;
+ }).join('');
+}
 document.getElementById('dockToggle')?.addEventListener('click',()=>{const d=document.getElementById('activeDock');d.classList.toggle('collapsed');document.getElementById('dockToggle').textContent=d.classList.contains('collapsed')?'Mostrar':'Ocultar'});
-document.addEventListener('click',e=>{const b=e.target.closest('[data-focus-card]');if(!b)return;const [pref,id]=b.dataset.focusCard.split('|');const cat=pref==='prep'?'preparacion':'actividad';document.getElementById(`${pref}-colaborador`).value=id;actualizarFormularioSeleccionado(cat);document.getElementById(`card-${pref}`)?.scrollIntoView({behavior:'smooth',block:'center'})});
+document.addEventListener('click',e=>{
+ const b=e.target.closest('[data-focus-timer]');
+ if(!b)return;
+ const t=timers.get(b.dataset.focusTimer);
+ if(!t)return;
+ const pref=t.categoria==='preparacion'?'prep':'act';
+ if(t.categoria==='preparacion'){
+  document.getElementById('prep-colaborador').value=t.colaborador_id||'';
+ }else{
+  const d=t.datos||{};
+  document.getElementById('act-tipo').value=d.actividad||'';
+  actualizarModoActividad();
+  if(actividadesCompartidas.has(d.actividad)){
+   const ids=participantesIds(t);
+   document.querySelectorAll('input[name="act-participante"]').forEach(x=>x.checked=ids.includes(x.value));
+  }else{
+   document.getElementById('act-colaborador').value=t.colaborador_id||participantesIds(t)[0]||'';
+  }
+ }
+ aplicarTimerFormulario(t);
+ document.getElementById(`card-${pref}`)?.scrollIntoView({behavior:'smooth',block:'center'});
+});
 function datosFormulario(cat){if(cat==='preparacion'){const d={fecha_preparacion:document.getElementById('prep-fecha').value,zona:document.getElementById('prep-zona').value.trim(),tipo:document.getElementById('prep-tipo').value,facturas:Number(document.getElementById('prep-facturas').value||0),libras:Number(document.getElementById('prep-libras').value||0)};if(!d.fecha_preparacion||!d.zona||!d.tipo||d.facturas<=0||d.libras<0)throw new Error('Complete colaborador, fecha, zona, tipo, facturas y libras.');return d}const actividad=document.getElementById('act-tipo').value,ids=idsActividadSeleccionados(),nombres=ids.map(id=>colaboradores.find(c=>c.id===id)?.nombre).filter(Boolean);const d={fecha:document.getElementById('act-fecha').value,actividad,participantes_ids:ids,participantes_nombres:nombres};if(!d.fecha||!d.actividad)throw new Error('Seleccione fecha y actividad.');if(actividadesCompartidas.has(actividad)&&ids.length<2)throw new Error('Seleccione al menos dos colaboradores para esta actividad compartida.');if(!actividadesCompartidas.has(actividad)&&ids.length!==1)throw new Error('Seleccione un colaborador.');return d}
 function mostrarConflicto(cat,msg){const el=document.getElementById(`conflict-${cat==='preparacion'?'prep':'act'}`);if(!el)return;el.textContent=msg;el.style.display='block';setTimeout(()=>el.style.display='none',6000)}
 async function rpc(nombre,args){const {data,error}=await supabase.rpc(nombre,args);if(error)throw error;return data}
-async function iniciar(cat){if(!esAdmin)throw new Error('SOLO_ADMINISTRADOR');const datos=datosFormulario(cat),ids=cat==='actividad'?datos.participantes_ids:[idSeleccionado(cat)];const id=ids[0];if(!id)return mostrarConflicto(cat,'Seleccione un colaborador.');if(!navigator.onLine)return mostrarConflicto(cat,'Sin conexión. La operación debe validarse en Supabase.');try{if(cat==='actividad')await rpc('iniciar_actividad_v2',{p_colaborador_ids:ids,p_datos:datos});else await rpc('iniciar_cronometro_v2',{p_categoria:cat,p_colaborador_id:id,p_datos:datos});await cargarTodo()}catch(e){mostrarConflicto(cat,e.message.includes('COLABORADOR_OCUPADO')||e.message.includes('CRONOMETRO_ACTIVO_EXISTENTE')?'Uno de los colaboradores ya tiene una actividad activa.':e.message)}}
+async function iniciar(cat){if(!esAdmin)throw new Error('SOLO_ADMINISTRADOR');const datos=datosFormulario(cat),ids=cat==='actividad'?datos.participantes_ids:[idSeleccionado(cat)];const id=ids[0];if(!id)return mostrarConflicto(cat,'Seleccione un colaborador.');if(!navigator.onLine)return mostrarConflicto(cat,'Sin conexión. La operación debe validarse en Supabase.');try{if(cat==='actividad')await rpc('iniciar_actividad_v3',{p_colaborador_ids:ids,p_datos:datos});else await rpc('iniciar_cronometro_v2',{p_categoria:cat,p_colaborador_id:id,p_datos:datos});await cargarTodo();if(cat==='actividad')limpiarFormularioActividad()}catch(e){mostrarConflicto(cat,e.message.includes('COLABORADOR_OCUPADO')||e.message.includes('CRONOMETRO_ACTIVO_EXISTENTE')?'Uno de los colaboradores ya tiene una actividad activa.':e.message)}}
+async function accionarTimerDirecto(timerId,expectedVersion,accion){
+ if(!esAdmin){alert('Este usuario tiene acceso de solo lectura.');return}
+ if(!navigator.onLine){alert('Sin conexión. La operación debe validarse en Supabase.');return}
+ const t=timers.get(timerId);
+ if(!t){await cargarTodo();alert('El proceso ya no está activo.');return}
+ try{
+  const version=Number(expectedVersion||t.version);
+  if(accion==='finish'){
+   await rpc('finalizar_cronometro',{p_id:timerId,p_expected_version:version});
+  }else if(accion==='cancel'){
+   await rpc('cancelar_cronometro',{p_id:timerId,p_expected_version:version});
+  }else{
+   await rpc('cambiar_estado_cronometro',{p_id:timerId,p_expected_version:version,p_accion:accion});
+  }
+  await cargarTodo();
+ }catch(e){
+  console.error(e);
+  await cargarTodo();
+  const mensaje=String(e.message||'');
+  if(mensaje.includes('VERSION_CONFLICT')||mensaje.includes('YA_CERRADO')){
+   alert('Este proceso ya fue modificado desde otro dispositivo. Se cargó la versión vigente.');
+  }else{
+   alert('No se pudo completar la acción: '+mensaje);
+  }
+ }
+}
+
 async function accionar(cat,accion){if(!esAdmin)throw new Error('SOLO_ADMINISTRADOR');const id=idSeleccionado(cat);if(!id)return mostrarConflicto(cat,'Seleccione un colaborador.');if(!navigator.onLine)return mostrarConflicto(cat,'Sin conexión.');const t=timerDeColaborador(cat,id);if(!t)return mostrarConflicto(cat,'El colaborador seleccionado no tiene un conteo activo en este módulo.');try{if(accion==='finish')await rpc('finalizar_cronometro',{p_id:t.id,p_expected_version:t.version});else if(accion==='cancel')await rpc('cancelar_cronometro',{p_id:t.id,p_expected_version:t.version});else await rpc('cambiar_estado_cronometro',{p_id:t.id,p_expected_version:t.version,p_accion:accion});await cargarTodo()}catch(e){mostrarConflicto(cat,'Fue modificado desde otro dispositivo. Se cargará la versión vigente.');await cargarTodo()}}
-document.addEventListener('click',e=>{const b=e.target.closest('button[data-action]');if(!b)return;if(!esAdmin){alert('Este usuario tiene acceso de solo lectura.');return;}const {action,cat,collab}=b.dataset;if(collab){document.getElementById(`${cat==='preparacion'?'prep':'act'}-colaborador`).value=collab;actualizarFormularioSeleccionado(cat)}action==='start'?iniciar(cat):accionar(cat,action)});
+document.addEventListener('click',e=>{
+ const directo=e.target.closest('button[data-direct-action]');
+ if(directo){
+  e.preventDefault();
+  accionarTimerDirecto(
+   directo.dataset.timerId,
+   directo.dataset.version,
+   directo.dataset.directAction
+  );
+  return;
+ }
+ if(e.target.closest('#nuevaActividadBtn')){
+  limpiarFormularioActividad();
+  return;
+ }
+ const b=e.target.closest('button[data-action]');
+ if(!b)return;
+ if(!esAdmin){alert('Este usuario tiene acceso de solo lectura.');return}
+ const {action,cat}=b.dataset;
+ action==='start'?iniciar(cat):accionar(cat,action);
+});
 document.addEventListener('change',e=>{if(e.target.id==='prep-colaborador')actualizarFormularioSeleccionado('preparacion');if(e.target.id==='act-colaborador')actualizarFormularioSeleccionado('actividad');if(e.target.id==='act-tipo')actualizarModoActividad();if(e.target.name==='act-participante')actualizarFormularioSeleccionado('actividad')});
 function aplicarTimer(t){timers.set(t.id,t);aplicarTimerFormulario(t)}
 function limpiarTarjetas(){timers.clear();renderColaboradores()}
-async function cargarTodo(){const [{data:cols,error:ec},{data:activos,error:e1},{data:prep,error:e2},{data:acts,error:e3}]=await Promise.all([supabase.from('colaboradores').select('*').eq('activo',true).order('orden').order('nombre'),supabase.from('cronometros').select('*').in('estado',['ejecucion','pausado']),supabase.from('historial_preparaciones').select('*').order('created_at',{ascending:false}).limit(200),supabase.from('historial_actividades').select('*').order('created_at',{ascending:false}).limit(200)]);if(ec||e1||e2||e3)throw ec||e1||e2||e3;colaboradores=cols||[];historialPrepMap.clear();(prep||[]).forEach(r=>historialPrepMap.set(r.id,r));historialActMap.clear();(acts||[]).forEach(r=>historialActMap.set(r.id,r));limpiarTarjetas();(activos||[]).forEach(aplicarTimer);renderActivosSuperiores();document.getElementById('prepHistory').innerHTML=(prep||[]).map(r=>`<tr><td>${new Date(r.created_at).toLocaleString('es-HN')}</td><td>${esc(r.empleado)}</td><td>${esc(r.zona)}</td><td>${esc(r.tipo)}</td><td>${r.facturas}</td><td>${Number(r.libras).toFixed(2)}</td><td>${fmt(r.segundos)}</td><td>${esc(r.finalizado_por_email||'')}</td>${esAdmin?`<td><div class="record-actions"><button class="edit-record-btn" data-edit-record="preparacion" data-record-id="${r.id}">Editar</button><button class="delete-record-btn" data-delete-record="preparacion" data-record-id="${r.id}">Eliminar</button></div></td>`:''}</tr>`).join('');document.getElementById('actHistory').innerHTML=(acts||[]).map(r=>`<tr><td>${new Date(r.created_at).toLocaleString('es-HN')}</td><td>${esc(r.empleado)}</td><td>${esc(r.actividad)}</td><td>${fmt(r.segundos)}</td><td>${esc(r.finalizado_por_email||'')}</td>${esAdmin?`<td><div class="record-actions"><button class="edit-record-btn" data-edit-record="actividad" data-record-id="${r.id}">Editar</button><button class="delete-record-btn" data-delete-record="actividad" data-record-id="${r.id}">Eliminar</button></div></td>`:''}</tr>`).join('');document.getElementById('conexion').textContent='Conectado. Datos sincronizados con Supabase.'}
+async function cargarTodo(){const [{data:cols,error:ec},{data:activos,error:e1},{data:prep,error:e2},{data:acts,error:e3}]=await Promise.all([supabase.from('colaboradores').select('*').eq('activo',true).order('orden').order('nombre'),supabase.from('cronometros').select('*').in('estado',['ejecucion','pausado']),supabase.from('historial_preparaciones').select('*').order('created_at',{ascending:false}).limit(200),supabase.from('historial_actividades').select('*').order('created_at',{ascending:false}).limit(200)]);if(ec||e1||e2||e3)throw ec||e1||e2||e3;colaboradores=cols||[];historialPrepMap.clear();(prep||[]).forEach(r=>historialPrepMap.set(r.id,r));historialActMap.clear();(acts||[]).forEach(r=>historialActMap.set(r.id,r));limpiarTarjetas();(activos||[]).forEach(aplicarTimer);renderActivosSuperiores();actualizarDisponibilidadColaboradores();document.getElementById('prepHistory').innerHTML=(prep||[]).map(r=>`<tr><td>${new Date(r.created_at).toLocaleString('es-HN')}</td><td>${esc(r.empleado)}</td><td>${esc(r.zona)}</td><td>${esc(r.tipo)}</td><td>${r.facturas}</td><td>${Number(r.libras).toFixed(2)}</td><td>${fmt(r.segundos)}</td><td>${esc(r.finalizado_por_email||'')}</td>${esAdmin?`<td><div class="record-actions"><button class="edit-record-btn" data-edit-record="preparacion" data-record-id="${r.id}">Editar</button><button class="delete-record-btn" data-delete-record="preparacion" data-record-id="${r.id}">Eliminar</button></div></td>`:''}</tr>`).join('');document.getElementById('actHistory').innerHTML=(acts||[]).map(r=>`<tr><td>${new Date(r.created_at).toLocaleString('es-HN')}</td><td>${esc(r.empleado)}</td><td>${esc(r.actividad)}</td><td>${fmt(r.segundos)}</td><td>${esc(r.finalizado_por_email||'')}</td>${esAdmin?`<td><div class="record-actions"><button class="edit-record-btn" data-edit-record="actividad" data-record-id="${r.id}">Editar</button><button class="delete-record-btn" data-delete-record="actividad" data-record-id="${r.id}">Eliminar</button></div></td>`:''}</tr>`).join('');document.getElementById('conexion').textContent='Conectado. Datos sincronizados con Supabase.'}
 
 async function verificarAdmin(userId){
  const {data,error}=await supabase.from('perfiles').select('rol').eq('id',userId).maybeSingle();
@@ -308,5 +441,5 @@ async function construirReporte(preparaciones,actividades,desde,hasta){
 
 descargarExcelBtn.addEventListener('click',async()=>{const desde=reporteDesde.value,hasta=reporteHasta.value;if(!desde||!hasta)return alert('Seleccione la fecha inicial y final.');if(desde>hasta)return alert('La fecha inicial no puede ser mayor que la fecha final.');if(!navigator.onLine)return alert('Se necesita conexión para consultar la información de Supabase.');if(typeof ExcelJS==='undefined')return alert('No se pudo cargar el generador de Excel. Revise la conexión.');const original=descargarExcelBtn.textContent;descargarExcelBtn.disabled=true;descargarExcelBtn.textContent='Generando dashboard...';reporteMensaje.textContent='Consultando información y construyendo gráficos ejecutivos...';try{const [p,a]=await Promise.all([obtenerTodosRegistros('historial_preparaciones',desde,hasta),obtenerTodosRegistros('historial_actividades',desde,hasta)]);if(!p.length&&!a.length){reporteMensaje.textContent='No se encontraron registros en el período seleccionado.';return}const libro=await construirReporte(p,a,desde,hasta),buffer=await libro.xlsx.writeBuffer();descargarBlob(new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),`Dashboard_Productividad_BIA_${desde}_al_${hasta}.xlsx`);reporteMensaje.textContent=`Dashboard generado con ${p.length} preparaciones y ${a.length} actividades.`}catch(err){console.error(err);reporteMensaje.textContent='No se pudo generar el reporte: '+err.message}finally{descargarExcelBtn.disabled=false;descargarExcelBtn.textContent=original}});
 
-supabase.channel('cronometros-operacion-v21').on('postgres_changes',{event:'*',schema:'public',table:'cronometros'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'historial_preparaciones'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'historial_actividades'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'colaboradores'},()=>{cargarTodo();if(esAdmin)cargarAdmin()}).subscribe();
+supabase.channel('cronometros-operacion-v22').on('postgres_changes',{event:'*',schema:'public',table:'cronometros'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'historial_preparaciones'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'historial_actividades'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'colaboradores'},()=>{cargarTodo();if(esAdmin)cargarAdmin()}).subscribe();
 try{await cargarTodo()}catch(e){document.getElementById('conexion').textContent='No se pudo cargar la información: '+e.message}

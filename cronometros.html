@@ -50,6 +50,10 @@ table{width:100%;border-collapse:collapse;min-width:1000px}th,td{padding:11px 10
 .viewer-mode .active-quick button:not(.focus-btn){display:none!important}
 .viewer-mode .active-quick .focus-btn{display:none!important}
 
+
+.participant-busy{opacity:.58}
+.participant-busy span::after{content:' · ocupado';font-size:11px;color:#b42318;font-weight:700}
+#nuevaActividadBtn{border:1px solid #b9c9dc}
 </style>
 
   <link rel="manifest" href="./manifest.webmanifest">
@@ -186,7 +190,7 @@ table{width:100%;border-collapse:collapse;min-width:1000px}th,td{padding:11px 10
   </section>
 </div>
 
-<footer class="app-footer"><img src="./assets/bia-honduras-logo.png" alt="BIA Honduras"> Control de Tiempos · PWA v2.1</footer>
+<footer class="app-footer"><img src="./assets/bia-honduras-logo.png" alt="BIA Honduras"> Control de Tiempos · PWA v2.2</footer>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <script type="module" src="./cronometros.js"></script>
 <script src="./pwa.js" defer></script>
