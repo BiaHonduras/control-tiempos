@@ -1,27 +1,31 @@
-BIA HONDURAS - CONTROL DE TIEMPOS PWA v1.6
+BIA HONDURAS - PWA v2.1
 
-NUEVA FUNCIÓN
-Los administradores pueden eliminar registros del historial de:
-- Preparación de pedidos.
-- Actividades.
+CORRECCIÓN
+Se solucionó el error:
+Could not find the function public.iniciar_actividad_compartida(...) in the schema cache.
 
-SEGURIDAD
-- El botón Eliminar solo se muestra a usuarios con rol admin.
-- La eliminación se ejecuta mediante una función segura en Supabase.
-- Se solicita un motivo obligatorio.
-- Antes de borrar, Supabase guarda una copia completa en:
-  public.auditoria_eliminaciones
-- La auditoría registra administrador, correo, motivo y fecha.
-- Los operadores no tienen permisos para eliminar.
+CAMBIO APLICADO
+La PWA ahora usa la función:
+public.iniciar_actividad_v2(uuid[], jsonb)
+
+Esta función sirve para:
+- Actividades individuales: exactamente un colaborador.
+- Preparación de Walmart: dos o más colaboradores.
+- Preparación de La Colonia: dos o más colaboradores.
+- Carga de Contenedores: dos o más colaboradores.
+- Descarga de Contenedores: dos o más colaboradores.
 
 INSTALACIÓN
-1. Publique todos los archivos de esta carpeta.
-2. Ejecute en Supabase SQL Editor:
-   actualizacion_v1_6_eliminar_registros_admin.sql
-3. Cierre y vuelva a abrir la PWA.
-4. Inicie sesión con un usuario administrador.
-5. En cada historial aparecerá la columna Acciones con el botón Eliminar.
+1. En Supabase, abra SQL Editor.
+2. Ejecute:
+   actualizacion_v2_1_corregir_inicio_actividades.sql
+3. Compruebe que el resultado final muestre:
+   iniciar_actividad_v2 | p_colaborador_ids uuid[], p_datos jsonb
+4. Reemplace todos los archivos publicados por esta versión.
+5. Cierre completamente la PWA o elimínela y vuelva a instalarla.
+6. Abra nuevamente la aplicación.
 
 IMPORTANTE
-No se elimina el cronómetro técnico original de la tabla cronometros.
-Solo se retira el registro visible del historial y se conserva la auditoría.
+El SQL incluye:
+notify pgrst, 'reload schema';
+para obligar a Supabase a actualizar la caché de funciones.
