@@ -41,6 +41,15 @@ table{width:100%;border-collapse:collapse;min-width:1000px}th,td{padding:11px 10
 .export-btn:disabled{opacity:.65;cursor:wait;transform:none}
 @media(max-width:720px){.report-controls{grid-template-columns:1fr}.export-btn{width:100%}}
 
+#editPrepFields[hidden],#editActFields[hidden]{display:none!important}
+
+.role-badge{display:inline-flex;align-items:center;padding:5px 9px;border-radius:999px;background:rgba(255,255,255,.16);font-size:12px;font-weight:800}
+.viewer-notice{display:flex;gap:12px;align-items:center;background:#eef6ff;border:1px solid #bad7fa;color:#174a7c;padding:14px 16px;border-radius:14px;margin-bottom:16px}
+.viewer-notice[hidden]{display:none}.viewer-icon{font-size:25px}.viewer-notice strong{display:block;margin-bottom:3px}
+.viewer-mode .admin-operation,.viewer-mode .admin-history{display:none!important}
+.viewer-mode .active-quick button:not(.focus-btn){display:none!important}
+.viewer-mode .active-quick .focus-btn{display:none!important}
+
 </style>
 
   <link rel="manifest" href="./manifest.webmanifest">
@@ -56,7 +65,7 @@ table{width:100%;border-collapse:collapse;min-width:1000px}th,td{padding:11px 10
     <img class="header-logo" src="./assets/bia-honduras-logo.png" alt="BIA Honduras">
     <div class="brand-copy"><h1>Control de Tiempos</h1><div>Operaciones de agencia · información en tiempo real</div></div>
   </div>
-  <div class="user"><span id="networkStatus" class="network"></span><button id="installApp" class="install-btn" hidden>Instalar app</button><span id="userEmail" class="user-email"></span><button id="adminOpenBtn" class="light" type="button" hidden>Administrar colaboradores</button><button onclick="window.salir()">Cerrar sesión</button></div>
+  <div class="user"><span id="networkStatus" class="network"></span><button id="installApp" class="install-btn" hidden>Instalar app</button><span id="roleBadge" class="role-badge">Verificando rol…</span><span id="userEmail" class="user-email"></span><button id="adminOpenBtn" class="light" type="button" hidden>Administrar colaboradores</button><button onclick="window.salir()">Cerrar sesión</button></div>
 </header>
 <section id="activeDock" class="active-dock" aria-live="polite">
   <div class="active-dock-inner">
@@ -68,7 +77,13 @@ table{width:100%;border-collapse:collapse;min-width:1000px}th,td{padding:11px 10
   </div>
 </section>
 <div class="container">
-  <div id="conexion" class="statusbar">Conectando con la base de datos…</div>
+  
+<section id="viewerNotice" class="viewer-notice" hidden>
+  <div class="viewer-icon">👁</div>
+  <div><strong>Modo consulta</strong><div>Puede observar los procesos activos y descargar el reporte de productividad. Las acciones operativas están reservadas para administradores.</div></div>
+</section>
+
+<div id="conexion" class="statusbar">Conectando con la base de datos…</div>
   
   <section id="adminPanel" class="card" hidden>
     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
@@ -84,14 +99,14 @@ table{width:100%;border-collapse:collapse;min-width:1000px}th,td{padding:11px 10
     <div id="adminMessage" class="note" style="margin:10px 0"></div>
     <div class="table"><table><thead><tr><th>Nombre</th><th>Código</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="collabTable"></tbody></table></div>
   </section>
-  <section class="card"><div class="section-head"><div><h2>Preparación de pedidos</h2><div class="note">Seleccione el colaborador y complete los datos. Puede iniciar varios conteos cambiando la persona seleccionada; todos aparecerán en la ventana superior.</div></div><span class="badge">Pedidos</span></div><div id="prepWorkers" class="workers"></div></section>
-  <section class="card"><div class="section-head"><div><h2>Actividades</h2><div class="note">Seleccione el colaborador y la actividad que realizará.</div></div><span class="badge">Operación</span></div><div id="actWorkers" class="workers"></div></section>
+  <section id="prepOperationSection" class="card admin-operation"><div class="section-head"><div><h2>Preparación de pedidos</h2><div class="note">Seleccione el colaborador y complete los datos. Puede iniciar varios conteos cambiando la persona seleccionada; todos aparecerán en la ventana superior.</div></div><span class="badge">Pedidos</span></div><div id="prepWorkers" class="workers"></div></section>
+  <section id="activityOperationSection" class="card admin-operation"><div class="section-head"><div><h2>Actividades</h2><div class="note">Seleccione el colaborador y la actividad que realizará.</div></div><span class="badge">Operación</span></div><div id="actWorkers" class="workers"></div></section>
   
 <section class="card" id="reportesExcel">
   <div class="section-head">
     <div>
       <h2>Reporte de productividad en Excel</h2>
-      <div class="note">Seleccione el período que desea analizar. El archivo incluye indicadores generales, productividad por colaborador y el detalle completo.</div>
+      <div class="note">Seleccione el período que desea analizar. El archivo incluye un dashboard ejecutivo con indicadores, gráficos y el detalle completo de productividad.</div>
     </div>
     <span class="badge">Excel</span>
   </div>
@@ -107,12 +122,12 @@ table{width:100%;border-collapse:collapse;min-width:1000px}th,td{padding:11px 10
     <button id="descargarExcelBtn" class="export-btn" type="button">Descargar reporte Excel</button>
   </div>
   <div id="reporteMensaje" class="report-help">
-    Preparaciones: facturas por hora, libras por hora y minutos por factura. Actividades: cantidad, horas y duración promedio. Las actividades compartidas se contabilizan como horas-hombre para cada participante.
+    El Excel incorpora un dashboard ejecutivo con KPIs, gráficos por colaborador, distribución de actividades y tendencia diaria. Las actividades compartidas se contabilizan como horas-hombre para cada participante.
   </div>
 </section>
 
-<section class="card"><h2>Historial de preparaciones</h2><div class="table"><table><thead><tr><th>Fecha</th><th>Empleado</th><th>Zona</th><th>Tipo</th><th>Facturas</th><th>Libras</th><th>Tiempo</th><th>Finalizado por</th><th class="admin-only-col" hidden>Acciones</th></tr></thead><tbody id="prepHistory"></tbody></table></div></section>
-  <section class="card"><h2>Historial de actividades</h2><div class="table"><table><thead><tr><th>Fecha</th><th>Empleado</th><th>Actividad</th><th>Tiempo</th><th>Finalizado por</th><th class="admin-only-col" hidden>Acciones</th></tr></thead><tbody id="actHistory"></tbody></table></div></section>
+<section id="prepHistorySection" class="card admin-history"><h2>Historial de preparaciones</h2><div class="table"><table><thead><tr><th>Fecha</th><th>Empleado</th><th>Zona</th><th>Tipo</th><th>Facturas</th><th>Libras</th><th>Tiempo</th><th>Finalizado por</th><th class="admin-only-col" hidden>Acciones</th></tr></thead><tbody id="prepHistory"></tbody></table></div></section>
+  <section id="activityHistorySection" class="card admin-history"><h2>Historial de actividades</h2><div class="table"><table><thead><tr><th>Fecha</th><th>Empleado</th><th>Actividad</th><th>Tiempo</th><th>Finalizado por</th><th class="admin-only-col" hidden>Acciones</th></tr></thead><tbody id="actHistory"></tbody></table></div></section>
 </div>
 
 <div id="editRecordModal" class="modal-backdrop" hidden>
@@ -171,8 +186,8 @@ table{width:100%;border-collapse:collapse;min-width:1000px}th,td{padding:11px 10
   </section>
 </div>
 
-<footer class="app-footer"><img src="./assets/bia-honduras-logo.png" alt="BIA Honduras"> Control de Tiempos · PWA v1.8</footer>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<footer class="app-footer"><img src="./assets/bia-honduras-logo.png" alt="BIA Honduras"> Control de Tiempos · PWA v2.1</footer>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <script type="module" src="./cronometros.js"></script>
 <script src="./pwa.js" defer></script>
 </body></html>
