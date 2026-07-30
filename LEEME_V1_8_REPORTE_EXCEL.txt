@@ -1,0 +1,50 @@
+BIA HONDURAS - CONTROL DE TIEMPOS PWA v1.8
+
+NUEVO REPORTE DE PRODUCTIVIDAD EN EXCEL
+
+El usuario selecciona una fecha inicial y final y descarga un archivo .xlsx con:
+
+1. Resumen Ejecutivo
+- Preparaciones terminadas.
+- Facturas y libras preparadas.
+- Horas de preparación.
+- Facturas por hora.
+- Libras por hora.
+- Minutos por factura.
+- Actividades terminadas.
+- Horas cronológicas.
+- Horas-hombre.
+- Total de horas productivas.
+
+2. Productividad por Colaborador
+- Preparaciones.
+- Facturas.
+- Libras.
+- Horas de preparación.
+- Facturas/hora.
+- Libras/hora.
+- Minutos/factura.
+- Actividades.
+- Horas-hombre de actividades.
+- Total de horas productivas.
+
+3. Preparaciones
+Detalle completo de cada registro con indicadores calculados.
+
+4. Actividades
+Detalle de actividades, participantes, tiempo y horas-hombre.
+
+5. Resumen de Actividades
+Cantidad, horas y duración promedio por tipo de actividad.
+
+ACTIVIDADES COMPARTIDAS
+El tiempo completo se acredita a cada participante como horas-hombre.
+
+INSTALACIÓN
+1. Reemplace todos los archivos publicados por esta versión.
+2. No requiere cambios SQL adicionales.
+3. Cierre y vuelva a abrir la PWA.
+4. El nuevo módulo aparece antes de los historiales.
+
+NOTA
+La generación del Excel requiere conexión para consultar todos los datos de Supabase y cargar la biblioteca de exportación.

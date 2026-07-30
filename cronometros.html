@@ -15,6 +15,32 @@ table{width:100%;border-collapse:collapse;min-width:1000px}th,td{padding:11px 10
 .shared-selector{background:#f6f9fc;border:1px solid var(--border);border-radius:12px;padding:13px}.participant-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;margin-top:8px}.participant-option{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:10px;cursor:pointer}.participant-option input{width:auto;accent-color:var(--blue)}.participant-option span{font-size:13px;font-weight:750}.shared-selector small{display:block;color:var(--muted);margin-top:8px}.app-footer{text-align:center;color:#7b8798;font-size:11px;padding:6px 20px 24px}.app-footer img{width:120px;opacity:.75;vertical-align:middle;margin-right:8px}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
 @media(max-width:950px){.form{grid-template-columns:1fr 1fr}.brand-copy{display:none}.header-logo{width:155px}.container{padding:15px}}@media(max-width:800px){.admin-form{grid-template-columns:1fr}.admin-form-actions{align-items:end}}@media(max-width:570px){.app-header{padding:12px}.header-logo{width:135px}.user-email{display:none}.form{grid-template-columns:1fr}.container{padding:10px}.card{padding:14px;border-radius:14px}.timer{font-size:34px}.active-dock-inner{padding:9px 10px}.active-item{flex-basis:92vw}.active-clock{font-size:22px}}
+
+.edit-record-btn{background:#eaf2ff;color:#0755c9;border:1px solid #a9c8ff;padding:7px 10px}
+.edit-record-btn:hover{background:#dbe9ff}
+.record-actions{display:flex;gap:6px;flex-wrap:wrap}
+.modal-backdrop{position:fixed;inset:0;background:rgba(3,18,38,.62);display:grid;place-items:center;padding:18px;z-index:5000}
+.modal-backdrop[hidden]{display:none}
+.edit-modal{width:min(620px,96vw);max-height:90vh;overflow:auto;background:#fff;border-radius:18px;box-shadow:0 24px 80px rgba(0,0,0,.3);padding:22px}
+.edit-modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:14px}
+.edit-modal-head h2{margin:0}
+.modal-close{background:#edf2f7;color:#173b63;font-size:18px;line-height:1;padding:8px 11px}
+.edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.edit-grid .full{grid-column:1/-1}
+.edit-participants{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;border:1px solid var(--border);padding:12px;border-radius:10px;max-height:230px;overflow:auto}
+.edit-participants label{display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;background:#f7f9fc}
+.edit-participants input{width:auto}
+.edit-audit-note{padding:10px 12px;border-radius:10px;background:#fff8e8;color:#7a4d00;font-size:12px;margin-top:12px}
+.modal-actions{display:flex;justify-content:flex-end;gap:9px;flex-wrap:wrap;margin-top:16px}
+@media(max-width:600px){.edit-grid{grid-template-columns:1fr}.edit-participants{grid-template-columns:1fr}}
+
+
+.report-controls{display:grid;grid-template-columns:repeat(2,minmax(180px,240px)) auto;gap:12px;align-items:end}
+.report-help{margin-top:12px;padding:11px 13px;border-radius:11px;background:#eef6ff;color:#244a78;font-size:12px;line-height:1.45}
+.export-btn{background:linear-gradient(135deg,#0d7a52,#17a673);color:#fff;min-width:190px}
+.export-btn:disabled{opacity:.65;cursor:wait;transform:none}
+@media(max-width:720px){.report-controls{grid-template-columns:1fr}.export-btn{width:100%}}
+
 </style>
 
   <link rel="manifest" href="./manifest.webmanifest">
@@ -60,10 +86,93 @@ table{width:100%;border-collapse:collapse;min-width:1000px}th,td{padding:11px 10
   </section>
   <section class="card"><div class="section-head"><div><h2>Preparación de pedidos</h2><div class="note">Seleccione el colaborador y complete los datos. Puede iniciar varios conteos cambiando la persona seleccionada; todos aparecerán en la ventana superior.</div></div><span class="badge">Pedidos</span></div><div id="prepWorkers" class="workers"></div></section>
   <section class="card"><div class="section-head"><div><h2>Actividades</h2><div class="note">Seleccione el colaborador y la actividad que realizará.</div></div><span class="badge">Operación</span></div><div id="actWorkers" class="workers"></div></section>
-  <section class="card"><h2>Historial de preparaciones</h2><div class="table"><table><thead><tr><th>Fecha</th><th>Empleado</th><th>Zona</th><th>Tipo</th><th>Facturas</th><th>Libras</th><th>Tiempo</th><th>Finalizado por</th><th class="admin-only-col" hidden>Acciones</th></tr></thead><tbody id="prepHistory"></tbody></table></div></section>
+  
+<section class="card" id="reportesExcel">
+  <div class="section-head">
+    <div>
+      <h2>Reporte de productividad en Excel</h2>
+      <div class="note">Seleccione el período que desea analizar. El archivo incluye indicadores generales, productividad por colaborador y el detalle completo.</div>
+    </div>
+    <span class="badge">Excel</span>
+  </div>
+  <div class="report-controls">
+    <div>
+      <label for="reporteDesde">Fecha inicial</label>
+      <input id="reporteDesde" type="date">
+    </div>
+    <div>
+      <label for="reporteHasta">Fecha final</label>
+      <input id="reporteHasta" type="date">
+    </div>
+    <button id="descargarExcelBtn" class="export-btn" type="button">Descargar reporte Excel</button>
+  </div>
+  <div id="reporteMensaje" class="report-help">
+    Preparaciones: facturas por hora, libras por hora y minutos por factura. Actividades: cantidad, horas y duración promedio. Las actividades compartidas se contabilizan como horas-hombre para cada participante.
+  </div>
+</section>
+
+<section class="card"><h2>Historial de preparaciones</h2><div class="table"><table><thead><tr><th>Fecha</th><th>Empleado</th><th>Zona</th><th>Tipo</th><th>Facturas</th><th>Libras</th><th>Tiempo</th><th>Finalizado por</th><th class="admin-only-col" hidden>Acciones</th></tr></thead><tbody id="prepHistory"></tbody></table></div></section>
   <section class="card"><h2>Historial de actividades</h2><div class="table"><table><thead><tr><th>Fecha</th><th>Empleado</th><th>Actividad</th><th>Tiempo</th><th>Finalizado por</th><th class="admin-only-col" hidden>Acciones</th></tr></thead><tbody id="actHistory"></tbody></table></div></section>
 </div>
-<footer class="app-footer"><img src="./assets/bia-honduras-logo.png" alt="BIA Honduras"> Control de Tiempos · PWA v1.6</footer>
+
+<div id="editRecordModal" class="modal-backdrop" hidden>
+  <section class="edit-modal" role="dialog" aria-modal="true" aria-labelledby="editRecordTitle">
+    <div class="edit-modal-head">
+      <div>
+        <h2 id="editRecordTitle">Corregir registro</h2>
+        <div id="editRecordSubtitle" class="note"></div>
+      </div>
+      <button id="editRecordClose" class="modal-close" type="button" aria-label="Cerrar">×</button>
+    </div>
+
+    <form id="editRecordForm">
+      <input id="editRecordType" type="hidden">
+      <input id="editRecordId" type="hidden">
+
+      <div id="editPrepFields" class="edit-grid" hidden>
+        <div>
+          <label for="editFacturas">Cantidad de facturas</label>
+          <input id="editFacturas" type="number" min="1" step="1">
+        </div>
+        <div>
+          <label for="editLibras">Cantidad de libras</label>
+          <input id="editLibras" type="number" min="0" step="0.01">
+        </div>
+      </div>
+
+      <div id="editActFields" class="edit-grid" hidden>
+        <div class="full">
+          <label for="editActividad">Actividad</label>
+          <select id="editActividad"></select>
+        </div>
+        <div class="full">
+          <label>Colaboradores</label>
+          <div id="editParticipantes" class="edit-participants"></div>
+          <div id="editParticipantHint" class="note" style="margin-top:6px"></div>
+        </div>
+      </div>
+
+      <div style="margin-top:13px">
+        <label for="editMotivo">Motivo de la corrección</label>
+        <textarea id="editMotivo" rows="3" minlength="5" required
+          style="width:100%;padding:10px;border:1px solid var(--border);border-radius:9px"
+          placeholder="Ejemplo: se ingresaron las libras incorrectas"></textarea>
+      </div>
+
+      <div class="edit-audit-note">
+        La información anterior y la nueva quedarán guardadas en la auditoría junto con el administrador responsable.
+      </div>
+
+      <div class="modal-actions">
+        <button id="editRecordCancel" class="light" type="button">Cancelar</button>
+        <button class="primary" type="submit">Guardar corrección</button>
+      </div>
+    </form>
+  </section>
+</div>
+
+<footer class="app-footer"><img src="./assets/bia-honduras-logo.png" alt="BIA Honduras"> Control de Tiempos · PWA v1.8</footer>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script type="module" src="./cronometros.js"></script>
 <script src="./pwa.js" defer></script>
 </body></html>
