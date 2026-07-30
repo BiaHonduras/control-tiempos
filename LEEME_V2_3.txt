@@ -1,0 +1,45 @@
+BIA HONDURAS - PWA v2.3
+
+NUEVAS FUNCIONES
+
+1. JORNADA LABORAL
+- Lunes a viernes: 8 horas.
+- Sábado: 4 horas.
+- Domingo: 0 horas.
+
+2. CONTROL DE AUSENCIAS
+Solo los administradores pueden registrar o eliminar ausencias.
+Campos:
+- Colaborador.
+- Fecha.
+- Horas ausente.
+- Motivo.
+
+Al seleccionar la fecha, la aplicación propone automáticamente:
+- 8 horas de lunes a viernes.
+- 4 horas el sábado.
+
+3. PRODUCTIVIDAD
+Productividad % = Horas productivas / Horas disponibles.
+
+Horas disponibles =
+Horas programadas del período - Horas de ausencia.
+
+Las actividades compartidas cuentan como horas-hombre para cada participante.
+
+4. EXCEL
+El dashboard incluye:
+- Productividad general.
+- Horas disponibles.
+- Horas productivas.
+- Horas de ausencia.
+- Productividad por colaborador.
+- Gráfico de ausencias.
+- Hoja detallada de ausencias.
+
+INSTALACIÓN
+1. Ejecutar en Supabase:
+   actualizacion_v2_3_jornada_ausencias.sql
+2. Reemplazar todos los archivos publicados.
+3. Cerrar y volver a abrir la PWA.
+4. En Android, borrar caché o reinstalar si conserva la versión anterior.

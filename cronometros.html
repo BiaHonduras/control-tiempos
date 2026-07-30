@@ -54,6 +54,15 @@ table{width:100%;border-collapse:collapse;min-width:1000px}th,td{padding:11px 10
 .participant-busy{opacity:.58}
 .participant-busy span::after{content:' · ocupado';font-size:11px;color:#b42318;font-weight:700}
 #nuevaActividadBtn{border:1px solid #b9c9dc}
+
+.absence-grid{display:grid;grid-template-columns:1.2fr .9fr .8fr 1.5fr auto;gap:10px;align-items:end}
+.absence-help{margin:10px 0;padding:11px 13px;background:#eef6ff;color:#244a78;border-radius:11px;font-size:12px}
+.absence-hours-note{font-size:11px;color:var(--muted);margin-top:5px}
+.absence-status{min-height:20px;margin:9px 0;color:#0b6b4d;font-weight:700;font-size:12px}
+.absence-delete{background:#fff1f0;color:#b42318;border:1px solid #f3b8b3}
+@media(max-width:1000px){.absence-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:620px){.absence-grid{grid-template-columns:1fr}}
+
 </style>
 
   <link rel="manifest" href="./manifest.webmanifest">
@@ -106,6 +115,47 @@ table{width:100%;border-collapse:collapse;min-width:1000px}th,td{padding:11px 10
   <section id="prepOperationSection" class="card admin-operation"><div class="section-head"><div><h2>Preparación de pedidos</h2><div class="note">Seleccione el colaborador y complete los datos. Puede iniciar varios conteos cambiando la persona seleccionada; todos aparecerán en la ventana superior.</div></div><span class="badge">Pedidos</span></div><div id="prepWorkers" class="workers"></div></section>
   <section id="activityOperationSection" class="card admin-operation"><div class="section-head"><div><h2>Actividades</h2><div class="note">Seleccione el colaborador y la actividad que realizará.</div></div><span class="badge">Operación</span></div><div id="actWorkers" class="workers"></div></section>
   
+
+<section id="absenceAdminSection" class="card admin-operation">
+  <div class="section-head">
+    <div>
+      <h2>Control de ausencias</h2>
+      <div class="note">Registre los días u horas que un colaborador no estuvo disponible. Esta información se descontará de las horas laborales del dashboard.</div>
+    </div>
+    <span class="badge">Solo administrador</span>
+  </div>
+  <form id="absenceForm" class="absence-grid">
+    <div>
+      <label for="absenceColaborador">Colaborador</label>
+      <select id="absenceColaborador" required><option value="">Seleccione</option></select>
+    </div>
+    <div>
+      <label for="absenceFecha">Fecha de ausencia</label>
+      <input id="absenceFecha" type="date" required>
+    </div>
+    <div>
+      <label for="absenceHoras">Horas ausente</label>
+      <input id="absenceHoras" type="number" min="0.25" max="8" step="0.25" required>
+      <div id="absenceHoursNote" class="absence-hours-note"></div>
+    </div>
+    <div>
+      <label for="absenceMotivo">Motivo u observación</label>
+      <input id="absenceMotivo" maxlength="200" placeholder="Ejemplo: permiso, incapacidad o ausencia">
+    </div>
+    <button class="primary" type="submit">Guardar ausencia</button>
+  </form>
+  <div class="absence-help">
+    Jornada configurada: lunes a viernes 8 horas, sábado 4 horas y domingo 0 horas. Al seleccionar la fecha, el sistema propone automáticamente la jornada completa de ese día.
+  </div>
+  <div id="absenceStatus" class="absence-status"></div>
+  <div class="table">
+    <table>
+      <thead><tr><th>Fecha</th><th>Colaborador</th><th>Horas ausente</th><th>Motivo</th><th>Registrado por</th><th>Acciones</th></tr></thead>
+      <tbody id="absenceTable"></tbody>
+    </table>
+  </div>
+</section>
+
 <section class="card" id="reportesExcel">
   <div class="section-head">
     <div>
@@ -190,7 +240,7 @@ table{width:100%;border-collapse:collapse;min-width:1000px}th,td{padding:11px 10
   </section>
 </div>
 
-<footer class="app-footer"><img src="./assets/bia-honduras-logo.png" alt="BIA Honduras"> Control de Tiempos · PWA v2.2</footer>
+<footer class="app-footer"><img src="./assets/bia-honduras-logo.png" alt="BIA Honduras"> Control de Tiempos · PWA v2.3</footer>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <script type="module" src="./cronometros.js"></script>
 <script src="./pwa.js" defer></script>
