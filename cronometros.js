@@ -242,7 +242,7 @@ function renderActivosSuperiores(){
       ?`<button class="primary" data-direct-action="resume" data-timer-id="${t.id}" data-version="${t.version}">Continuar</button>`
       :`<button class="warn" data-direct-action="pause" data-timer-id="${t.id}" data-version="${t.version}">Pausar</button>`}
      <button class="ok" data-direct-action="finish" data-timer-id="${t.id}" data-version="${t.version}">Finalizar</button>
-     ${t.categoria==='actividad'&&participantesIds(t).length>1?`<button class="team-btn" data-manage-team="${t.id}" title="Retirar o reasignar colaboradores">Gestionar equipo</button>`:''}
+     ${t.categoria==='actividad'&&participantesIds(t).length>1?`<button class="team-btn" data-manage-team="${t.id}" title="Sacar o reasignar colaboradores">Gestionar equipo</button>`:''}
     `:`<span class="badge">Solo lectura</span>`}
    </div>
   </article>`;
@@ -729,31 +729,134 @@ document.addEventListener('click',e=>{
 });
 
 
-// ===== GESTIÓN DE PARTICIPANTES EN ACTIVIDADES ACTIVAS =====
+// ===== GESTIÓN DE PARTICIPANTES EN ACTIVIDADES ACTIVAS V2.6.4 =====
 const teamModal=document.getElementById('teamModal');
-document.getElementById('teamModalClose')?.addEventListener('click',()=>teamModal.hidden=true);
-teamModal?.addEventListener('click',e=>{if(e.target===teamModal)teamModal.hidden=true});
+const cerrarTeamModal=()=>{if(teamModal)teamModal.hidden=true};
+
+document.getElementById('teamModalClose')?.addEventListener('click',cerrarTeamModal);
+document.getElementById('teamModalCancel')?.addEventListener('click',cerrarTeamModal);
+teamModal?.addEventListener('click',e=>{if(e.target===teamModal)cerrarTeamModal()});
+
 function abrirGestionEquipo(timerId){
- if(!esAdmin)return;
- const t=timers.get(timerId);if(!t||t.categoria!=='actividad')return;
- const ids=participantesIds(t),nombres=t.datos?.participantes_nombres||[];
- document.getElementById('teamModalSubtitle').textContent=`${t.datos?.actividad||'Actividad'} · ${fmt(segundosActuales(t))}`;
- document.getElementById('teamModalList').innerHTML=ids.map((id,i)=>`<div class="team-row"><div><strong>${esc(nombres[i]||colaboradores.find(c=>c.id===id)?.nombre||'Colaborador')}</strong><div class="note">Tiempo actual del proceso: ${fmt(segundosActuales(t))}</div></div><button class="danger" data-remove-member="${id}" data-team-timer="${t.id}" data-team-version="${t.version}">Sacar y liberar</button></div>`).join('');
+ if(!esAdmin)return alert('Solo un administrador puede gestionar el equipo.');
+
+ const t=timers.get(timerId);
+ if(!t || t.categoria!=='actividad'){
+  return alert('No se encontró la actividad activa.');
+ }
+
+ const ids=participantesIds(t);
+ const nombres=Array.isArray(t.datos?.participantes_nombres)
+  ?t.datos.participantes_nombres
+  :ids.map(id=>colaboradores.find(c=>c.id===id)?.nombre||'Colaborador');
+
+ if(ids.length<=1){
+  return alert('Esta actividad tiene un solo colaborador. No hay otro participante que pueda retirarse.');
+ }
+
+ document.getElementById('teamModalSubtitle').textContent=
+  `${t.datos?.actividad||'Actividad'} · ${fmt(segundosActuales(t))} · ${ids.length} colaboradores`;
+
+ document.getElementById('teamModalList').innerHTML=ids.map((id,i)=>{
+  const nombre=nombres[i]||colaboradores.find(c=>c.id===id)?.nombre||'Colaborador';
+  return `<div class="team-row">
+    <div>
+      <strong>${esc(nombre)}</strong>
+      <div class="team-member-time">Tiempo acumulado en esta actividad: ${fmt(segundosActuales(t))}</div>
+    </div>
+    <button
+      class="team-remove-btn"
+      type="button"
+      data-remove-member="${id}"
+      data-member-name="${esc(nombre)}"
+      data-team-timer="${t.id}"
+      data-team-version="${t.version}">
+      Sacar de actividad
+    </button>
+  </div>`;
+ }).join('');
+
  teamModal.hidden=false;
 }
+
 document.addEventListener('click',async e=>{
- const manage=e.target.closest('[data-manage-team]');if(manage){abrirGestionEquipo(manage.dataset.manageTeam);return}
- const btn=e.target.closest('[data-remove-member]');if(!btn)return;
- const t=timers.get(btn.dataset.teamTimer);if(!t)return;
- if(participantesIds(t).length<=1)return alert('No puede sacar al último participante. Finalice la actividad o reasígnela completa.');
- const nombre=t.datos?.participantes_nombres?.[participantesIds(t).indexOf(btn.dataset.removeMember)]||'este colaborador';
- const motivo=prompt(`Motivo para sacar a ${nombre} de la actividad:`,`Reasignado a otra actividad`);
- if(motivo===null||motivo.trim().length<3)return;
- if(!confirm(`¿Sacar a ${nombre}? Su tiempo trabajado se guardará y quedará libre para otra actividad.`))return;
+ const manage=e.target.closest('[data-manage-team]');
+ if(manage){
+  e.preventDefault();
+  abrirGestionEquipo(manage.dataset.manageTeam);
+  return;
+ }
+
+ const btn=e.target.closest('[data-remove-member]');
+ if(!btn)return;
+
+ e.preventDefault();
+
+ const t=timers.get(btn.dataset.teamTimer);
+ if(!t){
+  cerrarTeamModal();
+  await cargarTodo();
+  return alert('La actividad cambió en otro dispositivo. Se cargó la información más reciente.');
+ }
+
+ const ids=participantesIds(t);
+ if(ids.length<=1){
+  cerrarTeamModal();
+  return alert('No puede retirar al último participante. Finalice la actividad o manténgala activa.');
+ }
+
+ const colaboradorId=btn.dataset.removeMember;
+ const nombre=btn.dataset.memberName||'Colaborador';
+
+ if(!ids.includes(colaboradorId)){
+  cerrarTeamModal();
+  await cargarTodo();
+  return alert('Este colaborador ya no pertenece a la actividad activa.');
+ }
+
+ const motivo=prompt(
+  `Motivo para sacar a ${nombre} de la actividad:`,
+  'Reasignado a otra actividad'
+ );
+ if(motivo===null)return;
+ if(motivo.trim().length<3){
+  return alert('Debe indicar un motivo.');
+ }
+
+ if(!confirm(
+  `¿Sacar a ${nombre} de la actividad?\n\n`+
+  `Se guardará su tiempo trabajado hasta este momento y quedará libre para iniciar otra actividad. `+
+  `Los demás colaboradores continuarán con el cronómetro activo.`
+ ))return;
+
+ btn.disabled=true;
+ const textoOriginal=btn.textContent;
+ btn.textContent='Procesando...';
+
  try{
-  await rpc('admin_retirar_colaborador_actividad_v3',{p_cronometro_id:t.id,p_expected_version:Number(btn.dataset.teamVersion||t.version),p_colaborador_id:btn.dataset.removeMember,p_motivo:motivo.trim()});
-  teamModal.hidden=true;await cargarTodo();alert(`${nombre} fue retirado de la actividad. Su tiempo quedó guardado y ya está disponible para otra actividad.`);
- }catch(err){teamModal.hidden=true;await cargarTodo();alert('No se pudo retirar al colaborador: '+err.message)}
+  await rpc('admin_retirar_colaborador_actividad_v3',{
+   p_cronometro_id:t.id,
+   p_expected_version:Number(t.version),
+   p_colaborador_id:colaboradorId,
+   p_motivo:motivo.trim()
+  });
+
+  cerrarTeamModal();
+  await cargarTodo();
+
+  alert(
+   `${nombre} fue retirado correctamente.\n\n`+
+   `Su tiempo quedó guardado y ya puede asignarlo a otra actividad.`
+  );
+ }catch(err){
+  console.error(err);
+  cerrarTeamModal();
+  await cargarTodo();
+  alert('No se pudo retirar al colaborador: '+String(err.message||err));
+ }finally{
+  btn.disabled=false;
+  btn.textContent=textoOriginal;
+ }
 });
 
 async function eliminarRegistroHistorial(tipo,id){
@@ -1096,5 +1199,5 @@ async function construirReporte(preparaciones,actividades,ausencias,colaboradore
 
 descargarExcelBtn.addEventListener('click',async()=>{const desde=reporteDesde.value,hasta=reporteHasta.value;if(!desde||!hasta)return alert('Seleccione la fecha inicial y final.');if(desde>hasta)return alert('La fecha inicial no puede ser mayor que la fecha final.');if(!navigator.onLine)return alert('Se necesita conexión para consultar la información de Supabase.');if(typeof ExcelJS==='undefined')return alert('No se pudo cargar el generador de Excel. Revise la conexión.');const original=descargarExcelBtn.textContent;descargarExcelBtn.disabled=true;descargarExcelBtn.textContent='Generando dashboard...';reporteMensaje.textContent='Consultando información y construyendo gráficos ejecutivos...';try{const [p,a,ausencias,colsReporte,participaciones,participacionesPrep]=await Promise.all([obtenerTodosRegistros('historial_preparaciones',desde,hasta),obtenerTodosRegistros('historial_actividades',desde,hasta),obtenerAusenciasPeriodo(desde,hasta),obtenerColaboradoresReporte(),obtenerParticipacionesPeriodo(desde,hasta),obtenerParticipacionesPreparacionPeriodo(desde,hasta)]);if(!p.length&&!a.length&&!ausencias.length){reporteMensaje.textContent='No se encontraron registros ni ausencias en el período seleccionado.';return}const libro=await construirReporte(p,a,ausencias,colsReporte,participaciones,desde,hasta),buffer=await libro.xlsx.writeBuffer();descargarBlob(new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),`Dashboard_Productividad_BIA_${desde}_al_${hasta}.xlsx`);reporteMensaje.textContent=`Dashboard generado con ${p.length} preparaciones, ${a.length} actividades y ${ausencias.length} registros de ausencia.`}catch(err){console.error(err);reporteMensaje.textContent='No se pudo generar el reporte: '+err.message}finally{descargarExcelBtn.disabled=false;descargarExcelBtn.textContent=original}});
 
-supabase.channel('cronometros-operacion-v263').on('postgres_changes',{event:'*',schema:'public',table:'cronometros'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'historial_preparaciones'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'historial_actividades'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'colaboradores'},()=>{cargarTodo();if(esAdmin)cargarAdmin()}).on('postgres_changes',{event:'*',schema:'public',table:'ausencias_personal'},()=>{if(esAdmin)cargarAusenciasAdmin();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'metas_productividad'},()=>{cargarMetas();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'pausas_cronometros'},()=>{if(esAdmin)cargarAuditoria('pausas')}).on('postgres_changes',{event:'*',schema:'public',table:'cierres_diarios'},()=>{cargarEstadoCierre();if(esAdmin)cargarAuditoria('cierres')}).on('postgres_changes',{event:'*',schema:'public',table:'actividad_participaciones'},()=>{cargarTodo();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'preparacion_participaciones'},()=>{cargarTodo();actualizarDashboard()}).subscribe();
+supabase.channel('cronometros-operacion-v264').on('postgres_changes',{event:'*',schema:'public',table:'cronometros'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'historial_preparaciones'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'historial_actividades'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'colaboradores'},()=>{cargarTodo();if(esAdmin)cargarAdmin()}).on('postgres_changes',{event:'*',schema:'public',table:'ausencias_personal'},()=>{if(esAdmin)cargarAusenciasAdmin();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'metas_productividad'},()=>{cargarMetas();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'pausas_cronometros'},()=>{if(esAdmin)cargarAuditoria('pausas')}).on('postgres_changes',{event:'*',schema:'public',table:'cierres_diarios'},()=>{cargarEstadoCierre();if(esAdmin)cargarAuditoria('cierres')}).on('postgres_changes',{event:'*',schema:'public',table:'actividad_participaciones'},()=>{cargarTodo();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'preparacion_participaciones'},()=>{cargarTodo();actualizarDashboard()}).subscribe();
 try{await cargarMetas();await cargarTodo();await actualizarDashboard();if(esAdmin)await cargarAuditoria()}catch(e){document.getElementById('conexion').textContent='No se pudo cargar la información: '+e.message}

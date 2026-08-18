@@ -84,6 +84,24 @@ table{width:100%;border-collapse:collapse;min-width:1000px}th,td{padding:11px 10
 
 .prep-team-note{font-size:12px;color:var(--muted)}
 #prep-participant-grid{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+
+.team-modal{width:min(680px,96vw);max-height:88vh;overflow:auto;background:#fff;border-radius:20px;padding:22px;box-shadow:0 28px 90px rgba(3,18,38,.38)}
+.team-modal-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;margin-bottom:10px}
+.team-modal-head h2{margin:0;color:var(--navy)}
+.team-modal-list{display:grid;gap:10px;margin-top:16px}
+.team-row{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center;padding:14px;border:1px solid var(--border);border-radius:13px;background:#f9fbfd}
+.team-row strong{color:var(--navy);font-size:15px}
+.team-member-time{font-size:12px;color:var(--muted);margin-top:4px}
+.team-remove-btn{background:#fff1f0;color:#b42318;border:1px solid #f1aaa4;padding:9px 12px}
+.team-remove-btn:hover{background:#fee4e2}
+.team-remove-btn:disabled{opacity:.55;cursor:wait}
+.team-warning{margin-top:14px;background:#fff7e6;color:#7a4b00;padding:11px 13px;border-radius:11px;font-size:12px;line-height:1.45}
+.team-summary{padding:10px 12px;border-radius:10px;background:#eef6ff;color:#244a78;font-size:12px}
+@media(max-width:560px){
+ .team-row{grid-template-columns:1fr}
+ .team-remove-btn{width:100%}
+}
+
 </style>
 
   <link rel="manifest" href="./manifest.webmanifest">
@@ -274,6 +292,33 @@ table{width:100%;border-collapse:collapse;min-width:1000px}th,td{padding:11px 10
   <section id="activityHistorySection" class="card admin-history"><h2>Historial de actividades</h2><div class="table"><table><thead><tr><th>Fecha</th><th>Empleado</th><th>Actividad</th><th>Tiempo</th><th>Finalizado por</th><th class="admin-only-col" hidden>Acciones</th></tr></thead><tbody id="actHistory"></tbody></table></div></section>
 </div>
 
+
+<div id="teamModal" class="modal-backdrop" hidden>
+  <section class="team-modal" role="dialog" aria-modal="true" aria-labelledby="teamModalTitle">
+    <div class="team-modal-head">
+      <div>
+        <h2 id="teamModalTitle">Gestionar equipo</h2>
+        <div id="teamModalSubtitle" class="note">Actividad activa</div>
+      </div>
+      <button id="teamModalClose" class="modal-close" type="button" aria-label="Cerrar">×</button>
+    </div>
+
+    <div class="team-summary">
+      Seleccione el colaborador que desea sacar de la actividad. Su tiempo trabajado se guardará hasta el momento del retiro y quedará disponible inmediatamente para otra actividad.
+    </div>
+
+    <div id="teamModalList" class="team-modal-list"></div>
+
+    <div class="team-warning">
+      No se puede retirar al último colaborador. Si queda solamente una persona, deberá finalizar la actividad o mantenerla activa con ese colaborador.
+    </div>
+
+    <div class="modal-actions">
+      <button id="teamModalCancel" class="light" type="button">Cerrar</button>
+    </div>
+  </section>
+</div>
+
 <div id="editRecordModal" class="modal-backdrop" hidden>
   <section class="edit-modal" role="dialog" aria-modal="true" aria-labelledby="editRecordTitle">
     <div class="edit-modal-head">
@@ -330,7 +375,7 @@ table{width:100%;border-collapse:collapse;min-width:1000px}th,td{padding:11px 10
   </section>
 </div>
 
-<footer class="app-footer"><img src="./assets/bia-honduras-logo.png" alt="BIA Honduras"> Control de Tiempos · PWA v2.6.3</footer>
+<footer class="app-footer"><img src="./assets/bia-honduras-logo.png" alt="BIA Honduras"> Control de Tiempos · PWA v2.6.4</footer>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <script type="module" src="./cronometros.js"></script>
 <script src="./pwa.js" defer></script>
