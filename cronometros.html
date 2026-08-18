@@ -47,6 +47,7 @@ table{width:100%;border-collapse:collapse;min-width:1000px}th,td{padding:11px 10
 .viewer-notice{display:flex;gap:12px;align-items:center;background:#eef6ff;border:1px solid #bad7fa;color:#174a7c;padding:14px 16px;border-radius:14px;margin-bottom:16px}
 .viewer-notice[hidden]{display:none}.viewer-icon{font-size:25px}.viewer-notice strong{display:block;margin-bottom:3px}
 .viewer-mode .admin-operation,.viewer-mode .admin-history{display:none!important}
+.viewer-mode.can-close .cierre-operation{display:block!important}
 .viewer-mode .active-quick button:not(.focus-btn){display:none!important}
 .viewer-mode .active-quick .focus-btn{display:none!important}
 
@@ -62,6 +63,29 @@ table{width:100%;border-collapse:collapse;min-width:1000px}th,td{padding:11px 10
 .absence-delete{background:#fff1f0;color:#b42318;border:1px solid #f3b8b3}
 @media(max-width:1000px){.absence-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:620px){.absence-grid{grid-template-columns:1fr}}
+
+
+.dashboard-grid{display:grid;grid-template-columns:repeat(6,minmax(135px,1fr));gap:12px}
+.dash-kpi{border:1px solid var(--border);border-radius:14px;padding:14px;background:linear-gradient(180deg,#fff,#f8fbff)}
+.dash-kpi .label{font-size:11px;color:var(--muted);font-weight:850;text-transform:uppercase}
+.dash-kpi .value{font-size:26px;color:var(--navy);font-weight:950;margin-top:5px}
+.dash-kpi .sub{font-size:11px;color:var(--muted);margin-top:4px}
+.semaforo{display:inline-flex;align-items:center;gap:6px;font-weight:900}
+.semaforo:before{content:"";width:10px;height:10px;border-radius:50%;background:#98a2b3}
+.semaforo.verde:before{background:#12a66a}.semaforo.amarillo:before{background:#f5a623}.semaforo.rojo:before{background:#d64545}
+.dashboard-controls{display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin-bottom:15px}
+.dashboard-controls>div{min-width:175px}
+.admin-config-grid{display:grid;grid-template-columns:repeat(4,minmax(160px,1fr));gap:12px;align-items:end}
+.audit-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.audit-tabs button.active{background:var(--navy);color:#fff}
+.close-grid{display:grid;grid-template-columns:180px 1fr auto;gap:10px;align-items:end}
+.alert-list{display:grid;gap:8px;margin-top:12px}.alert-item{padding:10px 12px;border-radius:10px;background:#fff4e5;color:#8a4b00;border:1px solid #f7d9a1}
+@media(max-width:1100px){.dashboard-grid{grid-template-columns:repeat(3,1fr)}.admin-config-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:650px){.dashboard-grid{grid-template-columns:1fr 1fr}.admin-config-grid,.close-grid{grid-template-columns:1fr}}
+
+
+.team-btn{background:#eef6ff;color:#1559a6;border:1px solid #b7d2f2}
+.team-modal-list{display:grid;gap:9px;margin-top:12px}.team-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px;border:1px solid var(--border);border-radius:10px}.team-row strong{color:var(--navy)}
+.permission-table td,.permission-table th{vertical-align:middle}.permission-switch{display:flex;align-items:center;gap:8px}.permission-switch input{width:auto}
 
 </style>
 
@@ -111,10 +135,54 @@ table{width:100%;border-collapse:collapse;min-width:1000px}th,td{padding:11px 10
     </form>
     <div id="adminMessage" class="note" style="margin:10px 0"></div>
     <div class="table"><table><thead><tr><th>Nombre</th><th>Código</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="collabTable"></tbody></table></div>
+    <hr style="border:0;border-top:1px solid var(--border);margin:22px 0">
+    <div><h3 style="margin:0 0 4px;color:var(--navy)">Usuarios autorizados para cierre diario</h3><div class="note">El administrador puede permitir que un usuario de solo lectura abra o cierre días sin darle acceso al resto de funciones administrativas.</div></div>
+    <div class="table" style="margin-top:12px"><table class="permission-table"><thead><tr><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Permiso apertura/cierre</th></tr></thead><tbody id="closePermissionTable"></tbody></table></div>
   </section>
-  <section id="prepOperationSection" class="card admin-operation"><div class="section-head"><div><h2>Preparación de pedidos</h2><div class="note">Seleccione el colaborador y complete los datos. Puede iniciar varios conteos cambiando la persona seleccionada; todos aparecerán en la ventana superior.</div></div><span class="badge">Pedidos</span></div><div id="prepWorkers" class="workers"></div></section>
+  
+<section class="card" id="dashboardApp">
+  <div class="section-head">
+    <div>
+      <h2>Dashboard de productividad</h2>
+      <div class="note">Productividad basada en horas disponibles, jornada laboral, ausencias y metas configuradas.</div>
+    </div>
+    <span id="dashboardSemaforo" class="semaforo">Sin datos</span>
+  </div>
+  <div class="dashboard-controls">
+    <div><label>Desde</label><input id="dashDesde" type="date"></div>
+    <div><label>Hasta</label><input id="dashHasta" type="date"></div>
+    <button id="dashActualizar" class="primary" type="button">Actualizar dashboard</button>
+  </div>
+  <div class="dashboard-grid">
+    <div class="dash-kpi"><div class="label">Productividad</div><div id="kpiProductividad" class="value">0%</div><div class="sub">Horas productivas / disponibles</div></div>
+    <div class="dash-kpi"><div class="label">Horas disponibles</div><div id="kpiDisponibles" class="value">0</div><div class="sub">Jornada menos ausencias</div></div>
+    <div class="dash-kpi"><div class="label">Horas productivas</div><div id="kpiProductivas" class="value">0</div><div class="sub">Preparación + horas-hombre</div></div>
+    <div class="dash-kpi"><div class="label">Facturas / hora</div><div id="kpiFacturasHora" class="value">0</div><div id="metaFacturasHora" class="sub">Meta: —</div></div>
+    <div class="dash-kpi"><div class="label">Libras / hora</div><div id="kpiLibrasHora" class="value">0</div><div id="metaLibrasHora" class="sub">Meta: —</div></div>
+    <div class="dash-kpi"><div class="label">Ausencias</div><div id="kpiAusencias" class="value">0</div><div class="sub">Horas descontadas</div></div>
+  </div>
+  <div id="dashboardAlerts" class="alert-list"></div>
+</section>
+
+<section id="prepOperationSection" class="card admin-operation"><div class="section-head"><div><h2>Preparación de pedidos</h2><div class="note">Seleccione el colaborador y complete los datos. Puede iniciar varios conteos cambiando la persona seleccionada; todos aparecerán en la ventana superior.</div></div><span class="badge">Pedidos</span></div><div id="prepWorkers" class="workers"></div></section>
   <section id="activityOperationSection" class="card admin-operation"><div class="section-head"><div><h2>Actividades</h2><div class="note">Seleccione el colaborador y la actividad que realizará.</div></div><span class="badge">Operación</span></div><div id="actWorkers" class="workers"></div></section>
   
+
+
+<section id="metasAdminSection" class="card admin-operation">
+  <div class="section-head">
+    <div><h2>Metas de productividad</h2><div class="note">Solo administradores pueden establecer las metas usadas por los semáforos y el Excel.</div></div>
+    <span class="badge">Configuración</span>
+  </div>
+  <form id="metasForm" class="admin-config-grid">
+    <div><label>Facturas por hora</label><input id="goalFacturasHora" type="number" min="0" step="0.01" required></div>
+    <div><label>Libras por hora</label><input id="goalLibrasHora" type="number" min="0" step="0.01" required></div>
+    <div><label>Productividad mínima %</label><input id="goalProductividad" type="number" min="0" max="200" step="0.1" required></div>
+    <div><label>Alerta actividad (minutos)</label><input id="goalActividadMin" type="number" min="1" step="1" required></div>
+    <button class="primary" type="submit">Guardar metas</button>
+  </form>
+  <div id="metasStatus" class="absence-status"></div>
+</section>
 
 <section id="absenceAdminSection" class="card admin-operation">
   <div class="section-head">
@@ -150,10 +218,38 @@ table{width:100%;border-collapse:collapse;min-width:1000px}th,td{padding:11px 10
   <div id="absenceStatus" class="absence-status"></div>
   <div class="table">
     <table>
-      <thead><tr><th>Fecha</th><th>Colaborador</th><th>Horas ausente</th><th>Motivo</th><th>Registrado por</th><th>Acciones</th></tr></thead>
+      <thead><tr><th>Fecha</th><th>Colaborador</th><th>Tipo</th><th>Horas ausente</th><th>Motivo</th><th>Registrado por</th><th>Acciones</th></tr></thead>
       <tbody id="absenceTable"></tbody>
     </table>
   </div>
+</section>
+
+
+<section id="cierreAdminSection" class="card admin-operation cierre-operation">
+  <div class="section-head">
+    <div><h2>Cierre diario</h2><div class="note">Bloquea el inicio de nuevos procesos para una fecha cerrada.</div></div>
+    <span class="badge">Control</span>
+  </div>
+  <div class="close-grid">
+    <div><label>Fecha</label><input id="cierreFecha" type="date"></div>
+    <div><label>Observación</label><input id="cierreObservacion" placeholder="Resumen o incidencia del día"></div>
+    <div class="actions"><button id="cerrarDiaBtn" class="danger" type="button">Cerrar día</button><button id="abrirDiaBtn" class="ok" type="button">Abrir día</button></div>
+  </div>
+  <div id="cierreStatus" class="absence-status"></div>
+</section>
+
+<section id="auditoriaAdminSection" class="card admin-operation">
+  <div class="section-head">
+    <div><h2>Auditoría operativa</h2><div class="note">Consulta correcciones, eliminaciones, pausas justificadas y cierres diarios.</div></div>
+    <span class="badge">Auditoría</span>
+  </div>
+  <div class="audit-tabs">
+    <button class="light active" data-audit-type="modificaciones">Modificaciones</button>
+    <button class="light" data-audit-type="eliminaciones">Eliminaciones</button>
+    <button class="light" data-audit-type="pausas">Pausas</button>
+    <button class="light" data-audit-type="cierres">Cierres</button>
+  </div>
+  <div class="table"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Detalle</th><th>Usuario</th></tr></thead><tbody id="auditTable"></tbody></table></div>
 </section>
 
 <section class="card" id="reportesExcel">
@@ -184,6 +280,13 @@ table{width:100%;border-collapse:collapse;min-width:1000px}th,td{padding:11px 10
   <section id="activityHistorySection" class="card admin-history"><h2>Historial de actividades</h2><div class="table"><table><thead><tr><th>Fecha</th><th>Empleado</th><th>Actividad</th><th>Tiempo</th><th>Finalizado por</th><th class="admin-only-col" hidden>Acciones</th></tr></thead><tbody id="actHistory"></tbody></table></div></section>
 </div>
 
+<div id="teamModal" class="modal-backdrop" hidden>
+  <section class="edit-modal" role="dialog" aria-modal="true">
+    <div class="edit-modal-head"><div><h2>Gestionar participantes</h2><div id="teamModalSubtitle" class="note"></div></div><button id="teamModalClose" class="modal-close" type="button">×</button></div>
+    <div class="edit-audit-note">Al sacar a un colaborador se guardará automáticamente el tiempo trabajado en esta actividad. La persona quedará disponible de inmediato para iniciar otra actividad.</div>
+    <div id="teamModalList" class="team-modal-list"></div>
+  </section>
+</div>
 <div id="editRecordModal" class="modal-backdrop" hidden>
   <section class="edit-modal" role="dialog" aria-modal="true" aria-labelledby="editRecordTitle">
     <div class="edit-modal-head">
@@ -240,7 +343,7 @@ table{width:100%;border-collapse:collapse;min-width:1000px}th,td{padding:11px 10
   </section>
 </div>
 
-<footer class="app-footer"><img src="./assets/bia-honduras-logo.png" alt="BIA Honduras"> Control de Tiempos · PWA v2.3</footer>
+<footer class="app-footer"><img src="./assets/bia-honduras-logo.png" alt="BIA Honduras"> Control de Tiempos · PWA v2.5</footer>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <script type="module" src="./cronometros.js"></script>
 <script src="./pwa.js" defer></script>
