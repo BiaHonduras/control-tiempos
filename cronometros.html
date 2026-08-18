@@ -47,7 +47,6 @@ table{width:100%;border-collapse:collapse;min-width:1000px}th,td{padding:11px 10
 .viewer-notice{display:flex;gap:12px;align-items:center;background:#eef6ff;border:1px solid #bad7fa;color:#174a7c;padding:14px 16px;border-radius:14px;margin-bottom:16px}
 .viewer-notice[hidden]{display:none}.viewer-icon{font-size:25px}.viewer-notice strong{display:block;margin-bottom:3px}
 .viewer-mode .admin-operation,.viewer-mode .admin-history{display:none!important}
-.viewer-mode.can-close .cierre-operation{display:block!important}
 .viewer-mode .active-quick button:not(.focus-btn){display:none!important}
 .viewer-mode .active-quick .focus-btn{display:none!important}
 
@@ -83,10 +82,8 @@ table{width:100%;border-collapse:collapse;min-width:1000px}th,td{padding:11px 10
 @media(max-width:650px){.dashboard-grid{grid-template-columns:1fr 1fr}.admin-config-grid,.close-grid{grid-template-columns:1fr}}
 
 
-.team-btn{background:#eef6ff;color:#1559a6;border:1px solid #b7d2f2}
-.team-modal-list{display:grid;gap:9px;margin-top:12px}.team-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px;border:1px solid var(--border);border-radius:10px}.team-row strong{color:var(--navy)}
-.permission-table td,.permission-table th{vertical-align:middle}.permission-switch{display:flex;align-items:center;gap:8px}.permission-switch input{width:auto}
-
+.prep-team-note{font-size:12px;color:var(--muted)}
+#prep-participant-grid{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
 </style>
 
   <link rel="manifest" href="./manifest.webmanifest">
@@ -135,9 +132,6 @@ table{width:100%;border-collapse:collapse;min-width:1000px}th,td{padding:11px 10
     </form>
     <div id="adminMessage" class="note" style="margin:10px 0"></div>
     <div class="table"><table><thead><tr><th>Nombre</th><th>Código</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="collabTable"></tbody></table></div>
-    <hr style="border:0;border-top:1px solid var(--border);margin:22px 0">
-    <div><h3 style="margin:0 0 4px;color:var(--navy)">Usuarios autorizados para cierre diario</h3><div class="note">El administrador puede permitir que un usuario de solo lectura abra o cierre días sin darle acceso al resto de funciones administrativas.</div></div>
-    <div class="table" style="margin-top:12px"><table class="permission-table"><thead><tr><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Permiso apertura/cierre</th></tr></thead><tbody id="closePermissionTable"></tbody></table></div>
   </section>
   
 <section class="card" id="dashboardApp">
@@ -225,7 +219,7 @@ table{width:100%;border-collapse:collapse;min-width:1000px}th,td{padding:11px 10
 </section>
 
 
-<section id="cierreAdminSection" class="card admin-operation cierre-operation">
+<section id="cierreAdminSection" class="card admin-operation">
   <div class="section-head">
     <div><h2>Cierre diario</h2><div class="note">Bloquea el inicio de nuevos procesos para una fecha cerrada.</div></div>
     <span class="badge">Control</span>
@@ -233,7 +227,7 @@ table{width:100%;border-collapse:collapse;min-width:1000px}th,td{padding:11px 10
   <div class="close-grid">
     <div><label>Fecha</label><input id="cierreFecha" type="date"></div>
     <div><label>Observación</label><input id="cierreObservacion" placeholder="Resumen o incidencia del día"></div>
-    <div class="actions"><button id="cerrarDiaBtn" class="danger" type="button">Cerrar día</button><button id="abrirDiaBtn" class="ok" type="button">Abrir día</button></div>
+    <button id="cerrarDiaBtn" class="danger" type="button">Cerrar día</button>
   </div>
   <div id="cierreStatus" class="absence-status"></div>
 </section>
@@ -280,13 +274,6 @@ table{width:100%;border-collapse:collapse;min-width:1000px}th,td{padding:11px 10
   <section id="activityHistorySection" class="card admin-history"><h2>Historial de actividades</h2><div class="table"><table><thead><tr><th>Fecha</th><th>Empleado</th><th>Actividad</th><th>Tiempo</th><th>Finalizado por</th><th class="admin-only-col" hidden>Acciones</th></tr></thead><tbody id="actHistory"></tbody></table></div></section>
 </div>
 
-<div id="teamModal" class="modal-backdrop" hidden>
-  <section class="edit-modal" role="dialog" aria-modal="true">
-    <div class="edit-modal-head"><div><h2>Gestionar participantes</h2><div id="teamModalSubtitle" class="note"></div></div><button id="teamModalClose" class="modal-close" type="button">×</button></div>
-    <div class="edit-audit-note">Al sacar a un colaborador se guardará automáticamente el tiempo trabajado en esta actividad. La persona quedará disponible de inmediato para iniciar otra actividad.</div>
-    <div id="teamModalList" class="team-modal-list"></div>
-  </section>
-</div>
 <div id="editRecordModal" class="modal-backdrop" hidden>
   <section class="edit-modal" role="dialog" aria-modal="true" aria-labelledby="editRecordTitle">
     <div class="edit-modal-head">
@@ -343,7 +330,7 @@ table{width:100%;border-collapse:collapse;min-width:1000px}th,td{padding:11px 10
   </section>
 </div>
 
-<footer class="app-footer"><img src="./assets/bia-honduras-logo.png" alt="BIA Honduras"> Control de Tiempos · PWA v2.5</footer>
+<footer class="app-footer"><img src="./assets/bia-honduras-logo.png" alt="BIA Honduras"> Control de Tiempos · PWA v2.4</footer>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <script type="module" src="./cronometros.js"></script>
 <script src="./pwa.js" defer></script>
