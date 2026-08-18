@@ -1,0 +1,26 @@
+BIA HONDURAS - PWA v2.6.1
+
+CORRECCIÓN URGENTE
+- Solucionado: Uncaught SyntaxError: Illegal return statement.
+- La causa era una línea duplicada después de la función detalleTimer() en cronometros.js.
+- cronometros.js fue validado explícitamente como módulo ES, igual que lo carga el navegador.
+- Se incrementó el caché del Service Worker a v2.6.1 para evitar que Android/Chrome conserve el JS defectuoso.
+
+IMPORTANTE
+El mensaje:
+"Banner not shown: beforeinstallpromptevent.preventDefault() called..."
+NO impide el funcionamiento de la aplicación. Es un aviso de Chrome relacionado con el banner automático de instalación de la PWA.
+
+INSTALACIÓN
+1. Mantenga ejecutado en Supabase el SQL v2.6 que ya recibió.
+2. NO necesita ejecutar un SQL adicional para esta corrección.
+3. Reemplace los archivos publicados por los de v2.6.1.
+4. En Chrome/Edge haga una recarga forzada (Ctrl+F5).
+5. Si usa la PWA instalada en Android y persiste la versión anterior:
+   - cierre completamente la PWA,
+   - borre caché/datos del sitio o desinstale la PWA,
+   - abra nuevamente la URL e instálela otra vez.
+
+PRUEBAS
+- Actividad compartida: seleccionar 2+ colaboradores e iniciar.
+- Preparación de gira: seleccionar 1+ colaboradores e iniciar.
