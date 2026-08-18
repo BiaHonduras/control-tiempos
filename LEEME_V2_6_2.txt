@@ -1,0 +1,71 @@
+BIA HONDURAS - PWA v2.6.2
+
+CORRECCIONES PRINCIPALES
+
+1. "SIN CONTEO ACTIVO" EN ACTIVIDADES
+La causa era que al cargar una actividad compartida, actualizarModoActividad()
+volvía a reiniciar el cronómetro visual a 00:00:00 antes de marcar los participantes.
+Ahora el formulario se completa primero y el tiempo/estado se muestran al final.
+
+2. REALTIME YA NO BORRA LA SELECCIÓN
+Cada cambio recibido desde Supabase reconstruía los formularios y borraba la selección.
+Ahora se conserva fecha, actividad, colaboradores y datos que el usuario está observando.
+
+3. COLABORADORES OCUPADOS
+Ya no quedan deshabilitados en la lista.
+Se pueden seleccionar para VER su proceso activo.
+Aparecen identificados como:
+- en actividad
+- en preparación
+Supabase sigue bloqueando que se inicie un segundo proceso con la misma persona.
+
+4. SUPABASE COMO AUTORIDAD DE PARTICIPANTES
+Al cargar procesos activos, la PWA consulta:
+- actividad_participaciones
+- preparacion_participaciones
+y usa las filas activas para reconstruir participantes.
+Esto recupera inconsistencias de JSON o procesos de versiones anteriores.
+
+5. IDs Y NOMBRES
+Las nuevas funciones v7 guardan nombres exactamente en el mismo orden que sus UUID.
+Se elimina el riesgo de asociar el nombre de una persona con el ID de otra.
+
+6. RETIRO DE COLABORADOR
+admin_retirar_colaborador_actividad_v2 usa actividad_participaciones como fuente oficial.
+Después de retirar a una persona reconstruye correctamente el equipo restante.
+
+7. REPARACIÓN
+El SQL sincroniza automáticamente los cronómetros que ya estén activos al momento
+de ejecutar esta actualización.
+
+INSTALACIÓN
+
+1. Ejecutar en Supabase:
+   actualizacion_v2_6_2_estabilidad_activos.sql
+2. Reemplazar todos los archivos publicados por los de v2.6.2.
+3. Ctrl+F5 en computadora.
+4. En Android cerrar totalmente la PWA. Si conserva archivos viejos, borrar caché
+   o reinstalarla.
+
+PRUEBAS RECOMENDADAS
+
+A. Actividad individual
+- Carlos -> Aseo Parqueo.
+- Iniciar.
+- Seleccionar Carlos nuevamente.
+- Debe mostrar el mismo tiempo activo, no 00:00:00.
+
+B. Actividad compartida
+- Descarga de Contenedores con 3 personas.
+- Debe mostrar el cronómetro para cualquiera de los participantes.
+- Sacar una persona.
+- Esa persona queda libre y las otras continúan.
+
+C. Realtime
+- Abrir dos dispositivos.
+- Iniciar desde uno.
+- El otro debe mostrar el proceso sin perder su formulario actual.
+
+D. Preparación
+- Iniciar una gira con varios colaboradores.
+- Cada participante debe aparecer como ocupado y poder mostrar el mismo conteo.
