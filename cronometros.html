@@ -1067,6 +1067,125 @@ body{
   .dashboard-grid{grid-template-columns:1fr!important}
 }
 
+
+/* ==========================================================
+   BIA HONDURAS · AJUSTE COMPACTO v2.8.2
+   Corrige espacios en blanco y mejora proporciones.
+   ========================================================== */
+.operations-grid{
+  align-items:start!important;
+  gap:12px!important;
+}
+.operations-grid>#prepOperationSection,
+.operations-grid>#activityOperationSection,
+.operations-grid>.side-rail,
+.operations-grid>.active-dock,
+.history-grid>.card,
+.side-rail>.card{
+  align-self:start!important;
+}
+#prepOperationSection,
+#activityOperationSection{
+  min-height:auto!important;
+  height:auto!important;
+}
+#prepWorkers,
+#actWorkers{
+  gap:0!important;
+}
+#prepWorkers .worker,
+#actWorkers .worker{
+  padding:14px!important;
+}
+#prepWorkers .form,
+#actWorkers .form{
+  gap:8px!important;
+}
+#prepWorkers .timer,
+#actWorkers .timer{
+  padding:10px 0 2px!important;
+}
+#prepWorkers .actions,
+#actWorkers .actions{
+  margin-top:6px!important;
+  gap:6px!important;
+}
+#prepWorkers .actions button,
+#actWorkers .actions button{
+  min-height:34px!important;
+  padding:7px 10px!important;
+}
+.operations-grid .active-item{
+  min-height:306px!important;
+  padding:56px 18px 16px!important;
+}
+.operations-grid .active-clock{
+  font-size:40px!important;
+}
+.operations-grid .active-quick{
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:6px!important;
+}
+.operations-grid .active-quick button{
+  min-height:34px!important;
+  font-size:10px!important;
+}
+.side-rail{
+  gap:10px!important;
+  align-content:start!important;
+}
+#reportesExcel,
+#metasAdminSection,
+#cierreAdminSection,
+#dailySummaryCard{
+  padding:13px!important;
+}
+#reportesExcel .section-head,
+#metasAdminSection .section-head,
+#cierreAdminSection .section-head,
+#dailySummaryCard .section-head{
+  margin-bottom:8px!important;
+}
+#cierreAdminSection .close-grid,
+#metasAdminSection .admin-config-grid{
+  gap:8px!important;
+}
+.summary-list>div{
+  padding:8px 0!important;
+}
+.history-grid{
+  gap:12px!important;
+  align-items:start!important;
+}
+.history-grid>.card{
+  padding:14px!important;
+}
+.history-grid .table{
+  max-height:295px!important;
+}
+/* make inactive admin side panels a bit lighter/compact */
+#reportesExcel .note,
+#metasAdminSection .note,
+#cierreAdminSection .note,
+#dailySummaryCard .note{font-size:10px!important}
+
+/* optional compact desktop tweak when forms are short */
+@media(min-width:1180px){
+  .operations-grid{
+    grid-template-columns:minmax(330px,1.08fr) minmax(300px,.96fr) minmax(300px,.96fr) minmax(230px,.70fr)!important;
+  }
+}
+@media(max-width:1250px){
+  #prepOperationSection,
+  #activityOperationSection,
+  .side-rail>.card,
+  .history-grid>.card{height:auto!important;min-height:auto!important}
+}
+@media(max-width:760px){
+  .operations-grid .active-item{min-height:280px!important}
+  .history-grid .table{max-height:340px!important}
+}
+
 </style>
 
   <link rel="manifest" href="./manifest.webmanifest">
@@ -1395,7 +1514,7 @@ body{
   </section>
 </div>
 
-<footer class="app-footer"><img src="./assets/bia-honduras-logo.png" alt="BIA Honduras"> Control de Tiempos · PWA v2.8.1</footer>
+<footer class="app-footer"><img src="./assets/bia-honduras-logo.png" alt="BIA Honduras"> Control de Tiempos · PWA v2.8.2</footer>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <script type="module" src="./cronometros.js"></script>
 <script src="./pwa.js" defer></script>
