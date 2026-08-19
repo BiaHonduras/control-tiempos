@@ -1011,6 +1011,7 @@ async function actualizarDashboard(){
   const hActLegacy=acts.filter(x=>!covered.has(x.timer_id)).reduce((s,x)=>s+(Number(x.segundos||0)/3600)*Math.max(1,participantesActividad(x).length),0);
   const hProd=hPrep+hActParts+hActLegacy, prod=disp?hProd/disp*100:0,fac=prep.reduce((s,x)=>s+Number(x.facturas||0),0),lbs=prep.reduce((s,x)=>s+Number(x.libras||0),0),fh=hPrep?fac/hPrep:0,lh=hPrep?lbs/hPrep:0;
   document.getElementById('kpiProductividad').textContent=`${prod.toFixed(1)}%`;document.getElementById('kpiDisponibles').textContent=disp.toFixed(1);document.getElementById('kpiProductivas').textContent=hProd.toFixed(1);document.getElementById('kpiFacturasHora').textContent=fh.toFixed(1);document.getElementById('kpiLibrasHora').textContent=lh.toFixed(1);document.getElementById('kpiAusencias').textContent=horasAus.toFixed(1);
+  actualizarMetasMini(fh,lh);
   const sem=document.getElementById('dashboardSemaforo');const meta=Number(metasActuales.productividad_minima||80);sem.className='semaforo '+(prod>=meta?'verde':prod>=meta*.8?'amarillo':'rojo');sem.textContent=prod>=meta?'Meta alcanzada':prod>=meta*.8?'En seguimiento':'Bajo meta';
  }catch(err){console.error(err)}
 }
@@ -1029,6 +1030,30 @@ document.getElementById('abrirDiaBtn')?.addEventListener('click',async()=>{if(!p
 
 async function cargarAuditoria(tipo='modificaciones'){if(!esAdmin)return;let tabla='auditoria_modificaciones',campo='modificado_en';if(tipo==='eliminaciones'){tabla='auditoria_eliminaciones';campo='eliminado_en'}if(tipo==='pausas'){tabla='pausas_cronometros';campo='pausado_en'}if(tipo==='cierres'){tabla='auditoria_cierres_dia';campo='created_at'}const {data,error}=await supabase.from(tabla).select('*').order(campo,{ascending:false}).limit(100);const body=document.getElementById('auditTable');if(!body)return;if(error){body.innerHTML=`<tr><td colspan="4">${esc(error.message)}</td></tr>`;return}body.innerHTML=(data||[]).map(r=>`<tr><td>${fechaHoraReporte(r[campo])}</td><td>${esc(tipo)}</td><td>${esc(r.motivo||r.observacion||r.accion||r.tipo_registro||'Registro')}</td><td>${esc(r.usuario_email||r.cerrado_por_email||r.pausado_por_email||r.eliminado_por_email||r.modificado_por_email||'')}</td></tr>`).join('')}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-audit-type]');if(!b)return;document.querySelectorAll('[data-audit-type]').forEach(x=>x.classList.remove('active'));b.classList.add('active');cargarAuditoria(b.dataset.auditType)});
+
+
+function actualizarMetasMini(facturasHora=0,librasHora=0){
+ const mf=Number(metasActuales.facturas_hora||0);
+ const ml=Number(metasActuales.libras_hora||0);
+ const pf=mf>0?Math.min(100,Math.max(0,facturasHora/mf*100)):0;
+ const pl=ml>0?Math.min(100,Math.max(0,librasHora/ml*100)):0;
+ const set=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val};
+ set('miniFactActual',Number(facturasHora||0).toFixed(2));
+ set('miniFactMeta',mf.toFixed(2));
+ set('miniLibActual',Number(librasHora||0).toFixed(1));
+ set('miniLibMeta',ml.toFixed(1));
+ set('miniFactPct',`${pf.toFixed(0)}%`);
+ set('miniLibPct',`${pl.toFixed(0)}%`);
+ const bf=document.getElementById('miniFactBar');if(bf)bf.style.width=`${pf}%`;
+ const bl=document.getElementById('miniLibBar');if(bl)bl.style.width=`${pl}%`;
+}
+document.addEventListener('click',e=>{
+ const b=e.target.closest('#toggleMetasForm');
+ if(!b)return;
+ const card=document.getElementById('metasAdminSection');
+ card?.classList.toggle('metas-open');
+ b.textContent=card?.classList.contains('metas-open')?'Ocultar configuración':'Configurar metas';
+});
 
 // ===== REPORTE EJECUTIVO EN EXCEL CON DASHBOARD Y GRÁFICOS =====
 const reporteDesde=document.getElementById('reporteDesde');
