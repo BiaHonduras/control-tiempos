@@ -523,88 +523,155 @@ document.addEventListener('change',async e=>{
 
 
 
-// ===== CONTROL DE AUSENCIAS =====
+// ===== CONTROL DE AUSENCIAS V2.6.5 =====
 const absenceForm=document.getElementById('absenceForm');
 const absenceFecha=document.getElementById('absenceFecha');
 const absenceHoras=document.getElementById('absenceHoras');
+const absenceTipo=document.getElementById('absenceTipo');
+const absenceStatus=document.getElementById('absenceStatus');
 
 function actualizarHorasAusenciaPropuestas(){
- const jornada=horasJornadaFecha(absenceFecha.value);
+ const jornada=horasJornadaFecha(absenceFecha?.value);
+ if(!absenceHoras)return;
  absenceHoras.max=String(Math.max(.25,jornada||8));
  absenceHoras.value=jornada>0?jornada:'';
  document.getElementById('absenceHoursNote').textContent=jornada
-  ?`Jornada laboral configurada para este día: ${jornada} horas.`
+  ?`Jornada laboral configurada para este día: ${jornada} horas. Puede registrar una ausencia parcial.`
   :'El domingo no tiene jornada laboral configurada.';
 }
-absenceFecha.value=hoy();
-actualizarHorasAusenciaPropuestas();
-absenceFecha.addEventListener('change',actualizarHorasAusenciaPropuestas);
+if(absenceFecha){
+ absenceFecha.value=hoy();
+ actualizarHorasAusenciaPropuestas();
+ absenceFecha.addEventListener('change',actualizarHorasAusenciaPropuestas);
+}
 
 function renderSelectAusencias(){
  const sel=document.getElementById('absenceColaborador');
+ if(!sel)return;
  const actual=sel.value;
  sel.innerHTML='<option value="">Seleccione</option>'+
   colaboradores.map(c=>`<option value="${c.id}">${esc(c.nombre)}</option>`).join('');
  if([...sel.options].some(o=>o.value===actual))sel.value=actual;
 }
+
 async function cargarAusenciasAdmin(){
  if(!esAdmin)return;
  const {data,error}=await supabase.from('ausencias_personal')
   .select('*')
   .order('fecha',{ascending:false})
-  .limit(200);
+  .order('created_at',{ascending:false})
+  .limit(300);
+
  if(error){
-  document.getElementById('absenceStatus').textContent='No se pudieron cargar las ausencias: '+error.message;
+  absenceStatus.textContent='No se pudieron cargar las ausencias: '+error.message;
   return;
  }
+
  ausenciasMap.clear();
  (data||[]).forEach(a=>ausenciasMap.set(a.id,a));
+
  document.getElementById('absenceTable').innerHTML=(data||[]).map(a=>`
   <tr>
    <td>${esc(a.fecha)}</td>
    <td>${esc(a.colaborador_nombre)}</td>
-   <td>${esc(a.tipo_ausencia||'Ausencia')}</td><td>${Number(a.horas_ausencia).toFixed(2)}</td>
+   <td>${esc(a.tipo_ausencia||'Ausencia')}</td>
+   <td>${Number(a.horas_ausencia).toFixed(2)}</td>
    <td>${esc(a.motivo||'')}</td>
    <td>${esc(a.registrado_por_email||'')}</td>
    <td><button class="absence-delete" data-delete-absence="${a.id}">Eliminar</button></td>
   </tr>`).join('');
 }
-absenceForm.addEventListener('submit',async e=>{
+
+absenceForm?.addEventListener('submit',async e=>{
  e.preventDefault();
- if(!esAdmin)return alert('Solo un administrador puede registrar ausencias.');
- const colaboradorId=document.getElementById('absenceColaborador').value;
- const fecha=absenceFecha.value;
- const horas=Number(absenceHoras.value);
- const motivo=document.getElementById('absenceMotivo').value.trim();const tipoAusencia=document.getElementById('absenceTipo').value;
+
+ if(!esAdmin){
+  return alert('Solo un administrador puede registrar ausencias.');
+ }
+
+ const colaboradorId=document.getElementById('absenceColaborador')?.value||'';
+ const fecha=absenceFecha?.value||'';
+ const horas=Number(absenceHoras?.value);
+ const tipoAusencia=absenceTipo?.value||'Ausencia';
+ const motivo=document.getElementById('absenceMotivo')?.value.trim()||'';
  const jornada=horasJornadaFecha(fecha);
- if(!colaboradorId||!fecha)return alert('Seleccione colaborador y fecha.');
- if(jornada<=0)return alert('La fecha seleccionada no tiene jornada laboral.');
- if(!Number.isFinite(horas)||horas<=0||horas>jornada)return alert(`Las horas deben ser mayores que 0 y no superar ${jornada}.`);
+
+ if(!colaboradorId||!fecha){
+  return alert('Seleccione colaborador y fecha.');
+ }
+ if(jornada<=0){
+  return alert('La fecha seleccionada no tiene jornada laboral. Los domingos tienen 0 horas.');
+ }
+ if(!Number.isFinite(horas)||horas<=0||horas>jornada){
+  return alert(`Las horas de ausencia deben ser mayores que 0 y no superar ${jornada} horas.`);
+ }
+
+ const btn=absenceForm.querySelector('button[type="submit"]');
+ const textoOriginal=btn?.textContent||'Guardar ausencia';
+ if(btn){
+  btn.disabled=true;
+  btn.textContent='Guardando...';
+ }
+ absenceStatus.textContent='Guardando ausencia en Supabase...';
+
  try{
-  await rpc('admin_guardar_ausencia',{
+  await rpc('admin_guardar_ausencia_v3',{
    p_colaborador_id:colaboradorId,
    p_fecha:fecha,
    p_horas_ausencia:horas,
-   p_motivo:motivo||null,
-   p_tipo_ausencia:tipoAusencia
+   p_tipo_ausencia:tipoAusencia,
+   p_motivo:motivo||null
   });
+
   document.getElementById('absenceMotivo').value='';
-  document.getElementById('absenceStatus').textContent='Ausencia guardada correctamente.';
+  absenceStatus.textContent='Ausencia guardada correctamente.';
   await cargarAusenciasAdmin();
+  await actualizarDashboard();
+
  }catch(err){
-  document.getElementById('absenceStatus').textContent='No se pudo guardar: '+err.message;
+  console.error('Error guardando ausencia:',err);
+  const mensaje=String(err?.message||err||'Error desconocido');
+
+  if(mensaje.includes('SOLO_ADMINISTRADOR')){
+   absenceStatus.textContent='No se pudo guardar: este usuario no tiene permiso de administrador.';
+  }else if(mensaje.includes('DIA_SIN_JORNADA')){
+   absenceStatus.textContent='No se pudo guardar: la fecha seleccionada no tiene jornada laboral.';
+  }else if(mensaje.includes('HORAS_AUSENCIA_INVALIDAS')){
+   absenceStatus.textContent=`No se pudo guardar: las horas superan la jornada del día (${jornada} h).`;
+  }else if(mensaje.includes('COLABORADOR_NO_ENCONTRADO')){
+   absenceStatus.textContent='No se pudo guardar: el colaborador no existe o fue eliminado.';
+  }else{
+   absenceStatus.textContent='No se pudo guardar: '+mensaje;
+  }
+ }finally{
+  if(btn){
+   btn.disabled=false;
+   btn.textContent=textoOriginal;
+  }
  }
 });
+
 document.addEventListener('click',async e=>{
  const btn=e.target.closest('[data-delete-absence]');
  if(!btn)return;
- if(!confirm('¿Eliminar este registro de ausencia?'))return;
+
+ if(!esAdmin){
+  return alert('Solo un administrador puede eliminar ausencias.');
+ }
+
+ if(!confirm('¿Eliminar este registro de ausencia? El dashboard volverá a calcular las horas disponibles.'))return;
+
+ btn.disabled=true;
  try{
-  await rpc('admin_eliminar_ausencia',{p_id:btn.dataset.deleteAbsence});
+  await rpc('admin_eliminar_ausencia_v2',{p_id:btn.dataset.deleteAbsence});
+  absenceStatus.textContent='Ausencia eliminada correctamente.';
   await cargarAusenciasAdmin();
-  document.getElementById('absenceStatus').textContent='Ausencia eliminada correctamente.';
+  await actualizarDashboard();
  }catch(err){
-  document.getElementById('absenceStatus').textContent='No se pudo eliminar: '+err.message;
+  console.error(err);
+  absenceStatus.textContent='No se pudo eliminar: '+String(err?.message||err);
+ }finally{
+  btn.disabled=false;
  }
 });
 
@@ -1199,5 +1266,5 @@ async function construirReporte(preparaciones,actividades,ausencias,colaboradore
 
 descargarExcelBtn.addEventListener('click',async()=>{const desde=reporteDesde.value,hasta=reporteHasta.value;if(!desde||!hasta)return alert('Seleccione la fecha inicial y final.');if(desde>hasta)return alert('La fecha inicial no puede ser mayor que la fecha final.');if(!navigator.onLine)return alert('Se necesita conexión para consultar la información de Supabase.');if(typeof ExcelJS==='undefined')return alert('No se pudo cargar el generador de Excel. Revise la conexión.');const original=descargarExcelBtn.textContent;descargarExcelBtn.disabled=true;descargarExcelBtn.textContent='Generando dashboard...';reporteMensaje.textContent='Consultando información y construyendo gráficos ejecutivos...';try{const [p,a,ausencias,colsReporte,participaciones,participacionesPrep]=await Promise.all([obtenerTodosRegistros('historial_preparaciones',desde,hasta),obtenerTodosRegistros('historial_actividades',desde,hasta),obtenerAusenciasPeriodo(desde,hasta),obtenerColaboradoresReporte(),obtenerParticipacionesPeriodo(desde,hasta),obtenerParticipacionesPreparacionPeriodo(desde,hasta)]);if(!p.length&&!a.length&&!ausencias.length){reporteMensaje.textContent='No se encontraron registros ni ausencias en el período seleccionado.';return}const libro=await construirReporte(p,a,ausencias,colsReporte,participaciones,desde,hasta),buffer=await libro.xlsx.writeBuffer();descargarBlob(new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),`Dashboard_Productividad_BIA_${desde}_al_${hasta}.xlsx`);reporteMensaje.textContent=`Dashboard generado con ${p.length} preparaciones, ${a.length} actividades y ${ausencias.length} registros de ausencia.`}catch(err){console.error(err);reporteMensaje.textContent='No se pudo generar el reporte: '+err.message}finally{descargarExcelBtn.disabled=false;descargarExcelBtn.textContent=original}});
 
-supabase.channel('cronometros-operacion-v264').on('postgres_changes',{event:'*',schema:'public',table:'cronometros'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'historial_preparaciones'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'historial_actividades'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'colaboradores'},()=>{cargarTodo();if(esAdmin)cargarAdmin()}).on('postgres_changes',{event:'*',schema:'public',table:'ausencias_personal'},()=>{if(esAdmin)cargarAusenciasAdmin();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'metas_productividad'},()=>{cargarMetas();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'pausas_cronometros'},()=>{if(esAdmin)cargarAuditoria('pausas')}).on('postgres_changes',{event:'*',schema:'public',table:'cierres_diarios'},()=>{cargarEstadoCierre();if(esAdmin)cargarAuditoria('cierres')}).on('postgres_changes',{event:'*',schema:'public',table:'actividad_participaciones'},()=>{cargarTodo();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'preparacion_participaciones'},()=>{cargarTodo();actualizarDashboard()}).subscribe();
+supabase.channel('cronometros-operacion-v265').on('postgres_changes',{event:'*',schema:'public',table:'cronometros'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'historial_preparaciones'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'historial_actividades'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'colaboradores'},()=>{cargarTodo();if(esAdmin)cargarAdmin()}).on('postgres_changes',{event:'*',schema:'public',table:'ausencias_personal'},()=>{if(esAdmin)cargarAusenciasAdmin();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'metas_productividad'},()=>{cargarMetas();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'pausas_cronometros'},()=>{if(esAdmin)cargarAuditoria('pausas')}).on('postgres_changes',{event:'*',schema:'public',table:'cierres_diarios'},()=>{cargarEstadoCierre();if(esAdmin)cargarAuditoria('cierres')}).on('postgres_changes',{event:'*',schema:'public',table:'actividad_participaciones'},()=>{cargarTodo();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'preparacion_participaciones'},()=>{cargarTodo();actualizarDashboard()}).subscribe();
 try{await cargarMetas();await cargarTodo();await actualizarDashboard();if(esAdmin)await cargarAuditoria()}catch(e){document.getElementById('conexion').textContent='No se pudo cargar la información: '+e.message}

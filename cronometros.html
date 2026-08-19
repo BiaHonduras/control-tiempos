@@ -55,7 +55,7 @@ table{width:100%;border-collapse:collapse;min-width:1000px}th,td{padding:11px 10
 .participant-busy span::after{content:' · ocupado';font-size:11px;color:#b42318;font-weight:700}
 #nuevaActividadBtn{border:1px solid #b9c9dc}
 
-.absence-grid{display:grid;grid-template-columns:1.2fr .9fr .8fr 1.5fr auto;gap:10px;align-items:end}
+.absence-grid{display:grid;grid-template-columns:1.15fr .9fr .95fr .75fr 1.35fr auto;gap:10px;align-items:end}
 .absence-help{margin:10px 0;padding:11px 13px;background:#eef6ff;color:#244a78;border-radius:11px;font-size:12px}
 .absence-hours-note{font-size:11px;color:var(--muted);margin-top:5px}
 .absence-status{min-height:20px;margin:9px 0;color:#0b6b4d;font-weight:700;font-size:12px}
@@ -212,6 +212,16 @@ table{width:100%;border-collapse:collapse;min-width:1000px}th,td{padding:11px 10
     <div>
       <label for="absenceFecha">Fecha de ausencia</label>
       <input id="absenceFecha" type="date" required>
+    </div>
+    <div>
+      <label for="absenceTipo">Tipo de ausencia</label>
+      <select id="absenceTipo" required>
+        <option value="Ausencia">Ausencia</option>
+        <option value="Vacaciones">Vacaciones</option>
+        <option value="Incapacidad">Incapacidad</option>
+        <option value="Permiso">Permiso</option>
+        <option value="Día compensatorio">Día compensatorio</option>
+      </select>
     </div>
     <div>
       <label for="absenceHoras">Horas ausente</label>
@@ -375,7 +385,7 @@ table{width:100%;border-collapse:collapse;min-width:1000px}th,td{padding:11px 10
   </section>
 </div>
 
-<footer class="app-footer"><img src="./assets/bia-honduras-logo.png" alt="BIA Honduras"> Control de Tiempos · PWA v2.6.4</footer>
+<footer class="app-footer"><img src="./assets/bia-honduras-logo.png" alt="BIA Honduras"> Control de Tiempos · PWA v2.6.5</footer>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <script type="module" src="./cronometros.js"></script>
 <script src="./pwa.js" defer></script>

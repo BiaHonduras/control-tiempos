@@ -1,0 +1,45 @@
+BIA HONDURAS - PWA v2.6.5
+
+CORRECCIÓN DE AUSENCIAS
+
+CAUSA ENCONTRADA
+En v2.6.4 cronometros.js ejecutaba:
+document.getElementById('absenceTipo').value
+
+pero cronometros.html no tenía ningún elemento con id="absenceTipo".
+Por eso el JavaScript se detenía antes de llamar a Supabase y la ausencia
+nunca se guardaba.
+
+CORRECCIONES
+- Se agregó el selector Tipo de ausencia.
+- Ausencia
+- Vacaciones
+- Incapacidad
+- Permiso
+- Día compensatorio
+- Se creó admin_guardar_ausencia_v3 con firma nueva y sin ambigüedades.
+- Se creó admin_eliminar_ausencia_v2.
+- Se valida jornada:
+  L-V máximo 8 h
+  sábado máximo 4 h
+  domingo 0 h
+- Si ya existe una ausencia para la misma persona/fecha, se actualiza.
+- Al guardar o eliminar se actualiza inmediatamente el dashboard.
+- Se muestran mensajes de error más claros.
+
+INSTALACIÓN
+1. Ejecutar actualizacion_v2_6_5_fix_ausencias.sql en Supabase.
+2. Al final deben aparecer:
+   admin_guardar_ausencia_v3
+   admin_eliminar_ausencia_v2
+3. Reemplazar todos los archivos web por v2.6.5.
+4. Ctrl+F5 en computadora.
+5. En Android cerrar la PWA y borrar caché/reinstalar si mantiene la versión anterior.
+
+PRUEBA
+- Seleccionar un colaborador.
+- Seleccionar un día de lunes a viernes.
+- Tipo: Permiso.
+- Horas: 4.
+- Guardar.
+- Debe aparecer inmediatamente en la tabla y descontar 4 h del dashboard.
