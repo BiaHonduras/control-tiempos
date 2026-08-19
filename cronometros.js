@@ -411,6 +411,29 @@ document.addEventListener('click',e=>{
 document.addEventListener('change',e=>{if(e.target.name==='prep-participante')actualizarFormularioSeleccionado('preparacion');if(e.target.id==='act-colaborador')actualizarFormularioSeleccionado('actividad');if(e.target.id==='act-tipo')actualizarModoActividad();if(e.target.name==='act-participante')actualizarFormularioSeleccionado('actividad')});
 function aplicarTimer(t){timers.set(t.id,t);aplicarTimerFormulario(t)}
 function limpiarTarjetas(){timers.clear();renderColaboradores()}
+
+function actualizarResumenDia(prep=[],acts=[],activos=[]){
+ const fecha=hoy();
+ const prepHoy=(prep||[]).filter(r=>String(r.fecha_preparacion||r.created_at||'').slice(0,10)===fecha);
+ const actHoy=(acts||[]).filter(r=>String(r.fecha||r.created_at||'').slice(0,10)===fecha);
+ const activosIds=new Set();
+ (activos||[]).forEach(t=>participantesIds(t).forEach(id=>activosIds.add(id)));
+
+ const facturas=prepHoy.reduce((s,r)=>s+Number(r.facturas||0),0);
+ const libras=prepHoy.reduce((s,r)=>s+Number(r.libras||0),0);
+
+ const d=new Date(`${fecha}T12:00:00`);
+ const fechaTxt=d.toLocaleDateString('es-HN',{day:'2-digit',month:'long',year:'numeric'});
+
+ const set=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val};
+ set('summaryDate',fechaTxt);
+ set('summaryActive',activosIds.size);
+ set('summaryActivities',actHoy.length);
+ set('summaryPreparations',prepHoy.length);
+ set('summaryInvoices',facturas.toLocaleString('es-HN'));
+ set('summaryPounds',Math.round(libras).toLocaleString('es-HN'));
+}
+
 async function cargarTodo(){
  const estadoUI=capturarEstadoFormularios();
  const [
@@ -473,6 +496,7 @@ async function cargarTodo(){
  actualizarFormularioSeleccionado('actividad');
  renderActivosSuperiores();
  actualizarDisponibilidadColaboradores();
+ actualizarResumenDia(prep||[],acts||[],activosNormalizados);
 
  document.getElementById('prepHistory').innerHTML=(prep||[]).map(r=>`<tr><td>${new Date(r.created_at).toLocaleString('es-HN')}</td><td>${esc(r.empleado)}</td><td>${esc(r.zona)}</td><td>${esc(r.tipo)}</td><td>${r.facturas}</td><td>${Number(r.libras).toFixed(2)}</td><td>${fmt(r.segundos)}</td><td>${esc(r.finalizado_por_email||'')}</td>${esAdmin?`<td><div class="record-actions"><button class="edit-record-btn" data-edit-record="preparacion" data-record-id="${r.id}">Editar</button><button class="delete-record-btn" data-delete-record="preparacion" data-record-id="${r.id}">Eliminar</button></div></td>`:''}</tr>`).join('');
  document.getElementById('actHistory').innerHTML=(acts||[]).map(r=>`<tr><td>${new Date(r.created_at).toLocaleString('es-HN')}</td><td>${esc(r.empleado)}</td><td>${esc(r.actividad)}</td><td>${fmt(r.segundos)}</td><td>${esc(r.finalizado_por_email||'')}</td>${esAdmin?`<td><div class="record-actions"><button class="edit-record-btn" data-edit-record="actividad" data-record-id="${r.id}">Editar</button><button class="delete-record-btn" data-delete-record="actividad" data-record-id="${r.id}">Eliminar</button></div></td>`:''}</tr>`).join('');

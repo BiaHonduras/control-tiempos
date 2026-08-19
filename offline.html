@@ -1,1 +1,44 @@
-<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#173b63"><title>Sin conexión | Tiempos BIA</title><style>body{margin:0;font-family:Arial;background:#eef4f9;color:#173b63;min-height:100vh;display:grid;place-items:center}.c{max-width:430px;margin:20px;background:#fff;border-radius:20px;padding:30px;text-align:center;box-shadow:0 14px 40px #173b6322}.i{font-size:56px}button{border:0;border-radius:9px;background:#0f6aa8;color:white;padding:11px 18px;font-weight:700}</style></head><body><main class="c"><div class="i">📡</div><h1>Sin conexión</h1><p>La aplicación puede abrirse, pero iniciar, pausar, continuar o finalizar cronómetros requiere internet para que Supabase valide la operación.</p><button onclick="location.reload()">Reintentar</button></main></body></html>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b2346">
+<title>Sin conexión | BIA Honduras</title>
+<style>
+:root{--navy:#0b2346;--blue:#2f7cf6;--muted:#66758a}
+*{box-sizing:border-box}
+body{
+ margin:0;min-height:100vh;display:grid;place-items:center;padding:22px;
+ font-family:Inter,Segoe UI,Arial,sans-serif;color:#17263b;
+ background:radial-gradient(circle at 20% 10%,rgba(47,124,246,.14),transparent 22rem),linear-gradient(160deg,#eaf1f9,#f8fafc);
+}
+.card{
+ width:min(460px,100%);background:#fff;border:1px solid #e0e8f1;border-radius:24px;
+ padding:34px;text-align:center;box-shadow:0 22px 65px rgba(9,31,60,.14)
+}
+.logo{width:180px;margin:0 auto 24px;display:block}
+.icon{
+ width:70px;height:70px;display:grid;place-items:center;margin:0 auto 18px;border-radius:20px;
+ background:#eef5ff;color:var(--blue);font-size:32px;border:1px solid #dce9f8
+}
+h1{margin:0 0 10px;color:var(--navy);font-size:25px;letter-spacing:-.03em}
+p{margin:0 auto 24px;color:var(--muted);font-size:13px;line-height:1.6}
+button{
+ border:0;border-radius:11px;background:linear-gradient(135deg,#16477e,#2f7cf6);color:#fff;
+ padding:12px 18px;font-weight:850;cursor:pointer;box-shadow:0 8px 20px rgba(47,124,246,.18)
+}
+small{display:block;margin-top:18px;color:#8a96a6}
+</style>
+</head>
+<body>
+<main class="card">
+ <img class="logo" src="./assets/bia-honduras-logo.png" alt="BIA Honduras">
+ <div class="icon">⌁</div>
+ <h1>Sin conexión</h1>
+ <p>La interfaz puede abrirse, pero las operaciones de cronómetro requieren internet para que Supabase valide y sincronice la información.</p>
+ <button onclick="location.reload()">Intentar nuevamente</button>
+ <small>BIA Honduras · Control Operativo Corporativo</small>
+</main>
+</body>
+</html>

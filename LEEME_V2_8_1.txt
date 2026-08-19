@@ -1,0 +1,47 @@
+BIA HONDURAS - PWA v2.8.1 · MOCKUP FIEL
+
+Esta versión lleva el aplicativo real a la composición visual de la referencia aprobada.
+
+DISTRIBUCIÓN DE ESCRITORIO
+- Header azul corporativo.
+- Menú horizontal debajo del header.
+- 6 KPI cards en una sola línea.
+- Segunda fila:
+  1. En proceso ahora (tarjeta azul oscura)
+  2. Preparación de pedidos / giras
+  3. Registro de actividad
+  4. Panel lateral con Excel, metas, cierre y resumen del día
+- Tercera fila:
+  - Historial de preparaciones
+  - Historial de actividades
+
+NUEVO RESUMEN DEL DÍA
+Muestra:
+- Colaboradores activos.
+- Actividades completadas.
+- Giras / preparaciones.
+- Facturas procesadas.
+- Libras procesadas.
+
+FUNCIONALIDAD
+No se eliminaron funciones:
+- Cronómetros.
+- Supabase.
+- Actividades compartidas.
+- Preparaciones con múltiples colaboradores.
+- Gestionar equipo.
+- Ausencias.
+- Metas.
+- Auditoría.
+- Cierre diario.
+- Excel.
+- Roles administrador / consulta.
+
+BASE DE DATOS
+No requiere SQL adicional si v2.6.5 ya está funcionando.
+
+INSTALACIÓN
+1. Reemplazar TODOS los archivos publicados por esta versión.
+2. Ctrl + F5 en computadora.
+3. En Android cerrar totalmente la PWA.
+4. Si persisten estilos antiguos, borrar caché o reinstalar la PWA.
