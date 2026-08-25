@@ -1188,243 +1188,210 @@ body{
 
 
 /* ==========================================================
-   BIA HONDURAS · v2.9.0 · DISTRIBUCIÓN REFERENCIA
-   Aprovecha todo el ancho sin crear alturas vacías.
+   BIA HONDURAS · v2.9.2
+   Procesos activos verticales compactos + selector desplegable.
    ========================================================== */
-html,body{width:100%;max-width:100%;overflow-x:hidden}
-body{background:#f5f7fb!important}
-.container{
-  width:100%!important;
-  max-width:none!important;
-  margin:0!important;
-  padding:0 18px 72px!important;
-  display:block!important;
-}
-#dashboardApp{
-  width:100%!important;
-  margin:14px 0!important;
-  padding:0!important;
-  border:none!important;
-  box-shadow:none!important;
-  background:transparent!important;
-}
-.dashboard-grid{
-  width:100%!important;
-  grid-template-columns:repeat(6,minmax(0,1fr))!important;
-  gap:12px!important;
-}
-.dash-kpi{
-  min-width:0!important;
-  min-height:112px!important;
-  padding:15px!important;
-}
 
-/* Two-column workspace: operation/history + independent right rail */
-.workspace-grid{
-  display:grid!important;
-  grid-template-columns:minmax(0,1fr) minmax(245px,275px)!important;
-  gap:14px!important;
-  width:100%!important;
-  align-items:start!important;
-}
-.workspace-main{
-  min-width:0!important;
-  display:grid!important;
-  grid-template-columns:minmax(0,1fr)!important;
-  gap:14px!important;
-  align-content:start!important;
-}
-.operations-grid{
-  display:grid!important;
-  grid-template-columns:minmax(620px,2.45fr) minmax(250px,.72fr) minmax(215px,.58fr)!important;
-  gap:12px!important;
-  align-items:start!important;
-  width:100%!important;
-  margin:0!important;
-}
-.operations-grid:has(>.active-dock:not(.visible)){
-  grid-template-columns:minmax(0,1.2fr) minmax(0,1fr)!important;
-}
-.operations-grid>*{min-width:0!important;align-self:start!important}
-#prepOperationSection,#activityOperationSection{
-  min-height:0!important;height:auto!important;margin:0!important;padding:14px!important;
-}
-#prepWorkers .worker,#actWorkers .worker{min-height:0!important;height:auto!important;padding:0!important;border:0!important}
-#prepWorkers .form,#actWorkers .form{gap:8px!important}
-#prepWorkers input,#prepWorkers select,#actWorkers input,#actWorkers select{min-height:38px!important;padding:8px 10px!important;font-size:11px!important}
-#prepWorkers label,#actWorkers label{font-size:9.5px!important;margin:3px 0 4px!important}
-#prepWorkers .participant-grid,#actWorkers .participant-grid{max-height:96px!important}
-#prepWorkers .timer,#actWorkers .timer{font-size:27px!important;padding:9px 0 2px!important;margin:7px 0 2px!important}
-#prepWorkers .actions,#actWorkers .actions{margin-top:6px!important;gap:5px!important}
-#prepWorkers .actions button,#actWorkers .actions button{min-height:33px!important;padding:6px 8px!important;font-size:9.5px!important}
-
-/* One dark container; active processes dynamically fill available width */
+/* EN PROCESO AHORA: lista vertical en web y app */
 .operations-grid .active-dock{
-  position:relative!important;top:auto!important;
-  display:none;
-  width:100%!important;
-  margin:0!important;
-  padding:14px!important;
-  border-radius:14px!important;
-  background:radial-gradient(circle at 85% 10%,rgba(44,111,236,.20),transparent 330px),linear-gradient(145deg,#03183e,#062b63 72%,#04204d)!important;
-  box-shadow:0 9px 24px rgba(5,31,72,.15)!important;
-  border:1px solid rgba(81,139,221,.22)!important;
+  min-height:0!important;
+  height:auto!important;
 }
-.operations-grid .active-dock.visible{display:block!important}
-.operations-grid .active-dock-inner{padding:0!important;max-width:none!important}
-.operations-grid .active-dock-head{
-  position:static!important;
-  display:flex!important;
-  justify-content:flex-start!important;
-  margin:0 0 11px!important;
-}
-.operations-grid .active-dock-title{color:#fff!important;font-size:11px!important;text-transform:uppercase!important}
-.operations-grid .dock-toggle{margin-left:auto!important;background:rgba(255,255,255,.08)!important;color:#dce8fb!important;border:1px solid rgba(255,255,255,.12)!important}
-.operations-grid .active-count{background:rgba(255,255,255,.14)!important;color:#fff!important}
 .operations-grid .active-list{
-  display:grid!important;
-  grid-template-columns:repeat(auto-fit,minmax(235px,1fr))!important;
+  display:flex!important;
+  flex-direction:column!important;
+  flex-wrap:nowrap!important;
   gap:8px!important;
-  overflow:visible!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  max-height:520px!important;
   padding:0!important;
 }
 .operations-grid .active-item{
-  width:auto!important;
-  min-width:0!important;
-  min-height:268px!important;
-  margin:0!important;
-  padding:13px!important;
+  flex:0 0 auto!important;
+  width:100%!important;
+  min-height:0!important;
+  padding:12px 13px!important;
+  border-radius:12px!important;
   display:grid!important;
-  grid-template-columns:1fr auto!important;
-  grid-template-rows:auto 1fr auto!important;
-  background:linear-gradient(180deg,rgba(9,54,112,.78),rgba(5,37,82,.84))!important;
-  border:1px solid rgba(121,164,224,.24)!important;
-  border-left:1px solid rgba(121,164,224,.24)!important;
-  border-radius:10px!important;
-  box-shadow:none!important;
+  grid-template-columns:minmax(0,1fr) auto!important;
+  grid-template-rows:auto auto!important;
+  gap:8px 12px!important;
+  align-items:center!important;
 }
-.operations-grid .active-item-main{grid-column:1/-1!important}
-.operations-grid .active-person{font-size:13px!important;line-height:1.25!important}
-.operations-grid .active-detail{font-size:9px!important;white-space:normal!important;line-height:1.35!important;max-width:none!important}
-.operations-grid .active-kind{font-size:8px!important}
-.operations-grid .active-item>div:nth-child(2){grid-column:1/-1!important;align-self:end!important;text-align:center!important;padding:10px 0!important}
-.operations-grid .active-clock{font-size:28px!important;text-align:center!important}
-.operations-grid .active-state{text-align:center!important;font-size:8px!important}
+.operations-grid .active-item-main{
+  grid-column:1!important;
+  min-width:0!important;
+}
+.operations-grid .active-item-top{
+  margin:0 0 3px!important;
+  gap:5px!important;
+}
+.operations-grid .active-kind{
+  font-size:8px!important;
+  padding:3px 6px!important;
+}
+.operations-grid .active-person{
+  font-size:12.5px!important;
+  line-height:1.2!important;
+}
+.operations-grid .active-detail{
+  font-size:9.5px!important;
+  line-height:1.3!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  margin-top:2px!important;
+}
+.operations-grid .active-item>div:nth-child(2){
+  grid-column:2!important;
+  grid-row:1!important;
+  text-align:right!important;
+  padding:0!important;
+  align-self:center!important;
+}
+.operations-grid .active-clock{
+  font-size:25px!important;
+  line-height:1!important;
+  letter-spacing:.02em!important;
+}
+.operations-grid .active-state{
+  font-size:7.5px!important;
+  margin-top:3px!important;
+}
 .operations-grid .active-quick{
   grid-column:1/-1!important;
-  display:grid!important;
-  grid-template-columns:repeat(4,minmax(0,1fr))!important;
-  gap:4px!important;
-}
-.operations-grid .active-quick button{min-height:31px!important;padding:5px 4px!important;font-size:8.5px!important}
-
-/* Histories sit immediately below operational row */
-.history-grid{
-  display:grid!important;
-  grid-template-columns:minmax(0,1.16fr) minmax(0,.92fr)!important;
-  gap:12px!important;
-  align-items:start!important;
-  margin:0!important;
-}
-.history-grid>.card{height:auto!important;min-height:0!important;margin:0!important;padding:14px!important}
-.history-grid .table{max-height:310px!important;overflow:auto!important}
-.history-grid table{min-width:680px!important}
-.history-grid h2{font-size:13px!important;margin-bottom:10px!important}
-.history-grid th{font-size:8px!important;padding:8px!important}
-.history-grid td{font-size:9.5px!important;padding:8px!important}
-
-/* Independent right rail: never stretches the operational cards */
-.side-rail{
-  min-width:0!important;
+  grid-row:2!important;
   display:flex!important;
-  flex-direction:column!important;
-  gap:12px!important;
-  align-self:start!important;
+  flex-wrap:wrap!important;
+  justify-content:flex-end!important;
+  gap:5px!important;
+}
+.operations-grid .active-quick button{
+  flex:0 1 auto!important;
+  min-height:28px!important;
+  padding:5px 8px!important;
+  font-size:8.5px!important;
+  border-radius:7px!important;
+}
+.operations-grid .active-item+.active-item{
+  margin-top:0!important;
+}
+.operations-grid .active-dock:not(.visible){
+  min-height:120px!important;
+}
+.operations-grid .active-dock-head{
+  position:relative!important;
+  left:auto!important;
+  top:auto!important;
+  padding:10px 12px 7px!important;
+  background:linear-gradient(145deg,#03183e,#05275d)!important;
+  border-radius:12px 12px 0 0!important;
+}
+.operations-grid .active-dock-inner{
+  background:linear-gradient(145deg,#03183e,#05275d)!important;
+  border-radius:12px!important;
+  padding:0 8px 8px!important;
+  overflow:hidden!important;
+}
+.operations-grid .active-dock-title{font-size:10px!important}
+.operations-grid .active-count{font-size:9px!important;padding:2px 6px!important}
+
+/* PREPARACIÓN: selector múltiple desplegable */
+.prep-collab-field{position:relative}
+.prep-multiselect{
+  position:relative;
+  width:100%;
+  margin:0;
+}
+.prep-multiselect>summary{
+  list-style:none;
+  min-height:40px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:9px 11px;
+  border:1px solid #d9e2ef;
+  border-radius:9px;
+  background:#fbfcff;
+  color:#263b55;
+  font-size:12px;
+  font-weight:650;
+  cursor:pointer;
+  user-select:none;
+}
+.prep-multiselect>summary::-webkit-details-marker{display:none}
+.prep-multiselect[open]>summary{
+  border-color:#78a8ee;
+  box-shadow:0 0 0 3px rgba(47,124,246,.09);
+  background:#fff;
+}
+.prep-chevron{
+  color:#526b89;
+  font-size:13px;
+  transition:transform .18s ease;
+}
+.prep-multiselect[open] .prep-chevron{transform:rotate(180deg)}
+.prep-multiselect-menu{
+  position:absolute;
+  z-index:120;
+  left:0;right:0;
+  top:calc(100% + 5px);
+  display:grid!important;
+  grid-template-columns:1fr!important;
+  gap:5px!important;
+  max-height:230px!important;
+  overflow-y:auto!important;
+  padding:8px!important;
+  background:#fff;
+  border:1px solid #dbe4ef;
+  border-radius:10px;
+  box-shadow:0 16px 36px rgba(20,47,80,.18);
+}
+.prep-multiselect-menu .participant-option{
+  min-height:34px!important;
+  padding:7px 8px!important;
+  border-radius:8px!important;
+  font-size:11px!important;
   margin:0!important;
 }
-.side-rail>.card{width:100%!important;margin:0!important;height:auto!important;min-height:0!important;padding:14px!important}
-.side-rail #reportesExcel .report-controls{display:block!important;padding:0!important;border:0!important;background:transparent!important}
-.side-rail #reportesExcel .report-controls>div{display:none!important}
-.side-rail #reportesExcel .report-help{display:none!important}
-.side-rail #reportesExcel .export-btn{width:100%!important;min-width:0!important;font-size:10px!important;min-height:38px!important}
-.side-rail #reportesExcel .section-head h2,
-.side-rail #metasAdminSection .section-head h2,
-.side-rail #dailySummaryCard .section-head h2{font-size:12.5px!important}
-.side-rail .note{font-size:9.5px!important;line-height:1.35!important}
-
-/* Compact goals view like the approved reference */
-.metas-mini{display:grid;gap:11px}
-.meta-mini-row{display:grid;gap:5px}
-.meta-mini-top{display:flex;justify-content:space-between;gap:8px;font-size:9.5px;color:#344c70}
-.meta-mini-top strong{color:#17305c;font-size:10.5px}
-.mini-progress{height:5px;border-radius:999px;background:#e5ebf4;overflow:hidden}
-.mini-progress>span{display:block;height:100%;width:0;background:linear-gradient(90deg,#1460ed,#3a83ff);border-radius:999px;transition:width .25s ease}
-.mini-progress-label{text-align:right;font-size:8.5px;color:#65758b}
-.metas-config-btn{width:100%;min-height:34px!important;font-size:9px!important}
-.side-rail #metasForm{display:none!important;margin-top:10px!important;grid-template-columns:1fr!important;padding:10px!important}
-.side-rail #metasAdminSection.metas-open #metasForm{display:grid!important}
-.side-rail #metasAdminSection.metas-open #metasForm>div{display:block!important}
-.side-rail #metasAdminSection.metas-open #metasForm button{display:block!important;width:100%}
-
-.summary-list>div{padding:9px 0!important;font-size:9.5px!important}
-.summary-list strong{font-size:12px!important}
-
-/* Day closing stays available, but outside the executive dashboard */
-.post-workspace-admin{width:100%;margin-top:14px}
-.post-workspace-admin #cierreAdminSection{margin:0!important;padding:14px!important}
-.post-workspace-admin #cierreAdminSection .close-grid{grid-template-columns:180px minmax(260px,1fr) auto!important;padding:10px!important}
-
-/* Desktop wide screens */
-@media(min-width:1700px){
-  .container{padding-left:22px!important;padding-right:22px!important}
-  .workspace-grid{grid-template-columns:minmax(0,1fr) 285px!important}
-  .operations-grid{grid-template-columns:minmax(700px,2.55fr) minmax(270px,.72fr) minmax(230px,.58fr)!important}
-  .operations-grid .active-list{grid-template-columns:repeat(auto-fit,minmax(245px,1fr))!important}
+#prep-colab-summary{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.prep-collab-field>small{
+  display:block;
+  margin-top:5px;
+  font-size:9.5px;
+  color:#7a899c;
 }
 
-/* Laptop / tablet landscape: right rail goes below, no blank columns */
-@media(max-width:1280px){
-  .workspace-grid{grid-template-columns:1fr!important}
-  .side-rail{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important}
-  .operations-grid{grid-template-columns:minmax(520px,1.8fr) minmax(240px,.8fr) minmax(215px,.7fr)!important}
-}
-@media(max-width:1020px){
-  .dashboard-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
-  .operations-grid{grid-template-columns:1fr 1fr!important}
-  .operations-grid>.active-dock{grid-column:1/-1!important}
-  .operations-grid .active-list{grid-template-columns:repeat(2,minmax(0,1fr))!important}
-  .history-grid{grid-template-columns:1fr!important}
-  .side-rail{grid-template-columns:1fr 1fr!important}
-}
-
-/* Android / narrow PWA: cards become swipeable */
-@media(max-width:700px){
-  .container{padding:0 8px 70px!important}
-  .dashboard-grid{grid-template-columns:1fr 1fr!important;gap:7px!important}
-  .dash-kpi{min-height:96px!important;padding:10px!important}
-  .workspace-grid,.workspace-main{display:block!important}
-  .operations-grid{display:grid!important;grid-template-columns:1fr!important;gap:10px!important}
-  .operations-grid>*{grid-column:1!important}
+/* móvil / PWA: sigue vertical, sin scroll interno forzado */
+@media(max-width:760px){
   .operations-grid .active-list{
-    display:flex!important;
-    overflow-x:auto!important;
-    gap:8px!important;
-    scroll-snap-type:x mandatory;
-    scrollbar-width:none;
+    max-height:none!important;
+    overflow-y:visible!important;
   }
-  .operations-grid .active-list::-webkit-scrollbar{display:none}
   .operations-grid .active-item{
-    flex:0 0 88vw!important;
-    min-width:88vw!important;
-    scroll-snap-align:start;
+    padding:11px!important;
   }
-  #prepOperationSection,#activityOperationSection{padding:12px!important}
-  .history-grid{display:grid!important;grid-template-columns:1fr!important;gap:10px!important;margin-top:10px!important}
-  .side-rail{display:grid!important;grid-template-columns:1fr!important;gap:10px!important;margin-top:10px!important}
-  .post-workspace-admin #cierreAdminSection .close-grid{grid-template-columns:1fr!important}
-}
-@media(max-width:390px){
-  .dashboard-grid{grid-template-columns:1fr!important}
+  .operations-grid .active-clock{font-size:23px!important}
+  .operations-grid .active-person{font-size:12px!important}
+  .operations-grid .active-detail{font-size:9px!important}
+  .operations-grid .active-quick{
+    justify-content:stretch!important;
+  }
+  .operations-grid .active-quick button{
+    flex:1 1 calc(50% - 5px)!important;
+  }
+  .prep-multiselect-menu{
+    position:relative!important;
+    top:5px!important;
+    box-shadow:0 8px 20px rgba(20,47,80,.12)!important;
+  }
 }
 
 </style>
@@ -1503,9 +1470,7 @@ body{background:#f5f7fb!important}
   <div id="dashboardAlerts" class="alert-list"></div>
 </section>
 
-<div class="workspace-grid">
-  <main class="workspace-main">
-    <div class="operations-grid">
+<div class="operations-grid">
   <section id="activeDock" class="active-dock" aria-live="polite">
   <div class="active-dock-inner">
     <div class="active-dock-head">
@@ -1517,25 +1482,6 @@ body{background:#f5f7fb!important}
 </section>
   <section id="prepOperationSection" class="card admin-operation"><div class="section-head"><div><h2>Preparación de pedidos</h2><div class="note">Seleccione el colaborador y complete los datos. Puede iniciar varios conteos cambiando la persona seleccionada; todos aparecerán en la ventana superior.</div></div><span class="badge">Pedidos</span></div><div id="prepWorkers" class="workers"></div></section>
   <section id="activityOperationSection" class="card admin-operation"><div class="section-head"><div><h2>Actividades</h2><div class="note">Seleccione el colaborador y la actividad que realizará.</div></div><span class="badge">Operación</span></div><div id="actWorkers" class="workers"></div></section>
-  
-</div>
-
-
-    <div class="history-grid">
-  <section id="prepHistorySection" class="card admin-history"><h2>Historial de preparaciones</h2><div class="table"><table><thead><tr><th>Fecha</th><th>Empleado</th><th>Zona</th><th>Tipo</th><th>Facturas</th><th>Libras</th><th>Tiempo</th><th>Finalizado por</th><th class="admin-only-col" hidden>Acciones</th></tr></thead><tbody id="prepHistory"></tbody></table></div></section>
-  <section id="activityHistorySection" class="card admin-history"><h2>Historial de actividades</h2><div class="table"><table><thead><tr><th>Fecha</th><th>Empleado</th><th>Actividad</th><th>Tiempo</th><th>Finalizado por</th><th class="admin-only-col" hidden>Acciones</th></tr></thead><tbody id="actHistory"></tbody></table></div></section>
-</div>
-
-
-
-  
-  
-
-
-
-
-
-  </main>
   <aside class="side-rail">
     <section class="card" id="reportesExcel">
   <div class="section-head">
@@ -1565,21 +1511,7 @@ body{background:#f5f7fb!important}
     <div><h2>Metas de productividad</h2><div class="note">Solo administradores pueden establecer las metas usadas por los semáforos y el Excel.</div></div>
     <span class="badge">Configuración</span>
   </div>
-  
-  <div class="metas-mini" id="metasMini">
-    <div class="meta-mini-row">
-      <div class="meta-mini-top"><span>Facturas / hora</span><strong><span id="miniFactActual">0</span> / <span id="miniFactMeta">0</span></strong></div>
-      <div class="mini-progress"><span id="miniFactBar"></span></div>
-      <div id="miniFactPct" class="mini-progress-label">0%</div>
-    </div>
-    <div class="meta-mini-row">
-      <div class="meta-mini-top"><span>Libras / hora</span><strong><span id="miniLibActual">0</span> / <span id="miniLibMeta">0</span></strong></div>
-      <div class="mini-progress"><span id="miniLibBar"></span></div>
-      <div id="miniLibPct" class="mini-progress-label">0%</div>
-    </div>
-    <button id="toggleMetasForm" class="light metas-config-btn" type="button">Configurar metas</button>
-  </div>
-<form id="metasForm" class="admin-config-grid">
+  <form id="metasForm" class="admin-config-grid">
     <div><label>Facturas por hora</label><input id="goalFacturasHora" type="number" min="0" step="0.01" required></div>
     <div><label>Libras por hora</label><input id="goalLibrasHora" type="number" min="0" step="0.01" required></div>
     <div><label>Productividad mínima %</label><input id="goalProductividad" type="number" min="0" max="200" step="0.1" required></div>
@@ -1588,7 +1520,18 @@ body{background:#f5f7fb!important}
   </form>
   <div id="metasStatus" class="absence-status"></div>
 </section>
-    
+    <section id="cierreAdminSection" class="card admin-operation">
+  <div class="section-head">
+    <div><h2>Cierre diario</h2><div class="note">Bloquea el inicio de nuevos procesos para una fecha cerrada.</div></div>
+    <span class="badge">Control</span>
+  </div>
+  <div class="close-grid">
+    <div><label>Fecha</label><input id="cierreFecha" type="date"></div>
+    <div><label>Observación</label><input id="cierreObservacion" placeholder="Resumen o incidencia del día"></div>
+    <button id="cerrarDiaBtn" class="danger" type="button">Cerrar día</button>
+  </div>
+  <div id="cierreStatus" class="absence-status"></div>
+</section>
     
 <section id="dailySummaryCard" class="card daily-summary-card">
   <div class="section-head">
@@ -1610,20 +1553,18 @@ body{background:#f5f7fb!important}
   </aside>
 </div>
 
-<div class="post-workspace-admin">
-  <section id="cierreAdminSection" class="card admin-operation">
-  <div class="section-head">
-    <div><h2>Cierre diario</h2><div class="note">Bloquea el inicio de nuevos procesos para una fecha cerrada.</div></div>
-    <span class="badge">Control</span>
-  </div>
-  <div class="close-grid">
-    <div><label>Fecha</label><input id="cierreFecha" type="date"></div>
-    <div><label>Observación</label><input id="cierreObservacion" placeholder="Resumen o incidencia del día"></div>
-    <button id="cerrarDiaBtn" class="danger" type="button">Cerrar día</button>
-  </div>
-  <div id="cierreStatus" class="absence-status"></div>
-</section>
+<div class="history-grid">
+  <section id="prepHistorySection" class="card admin-history"><h2>Historial de preparaciones</h2><div class="table"><table><thead><tr><th>Fecha</th><th>Empleado</th><th>Zona</th><th>Tipo</th><th>Facturas</th><th>Libras</th><th>Tiempo</th><th>Finalizado por</th><th class="admin-only-col" hidden>Acciones</th></tr></thead><tbody id="prepHistory"></tbody></table></div></section>
+  <section id="activityHistorySection" class="card admin-history"><h2>Historial de actividades</h2><div class="table"><table><thead><tr><th>Fecha</th><th>Empleado</th><th>Actividad</th><th>Tiempo</th><th>Finalizado por</th><th class="admin-only-col" hidden>Acciones</th></tr></thead><tbody id="actHistory"></tbody></table></div></section>
 </div>
+
+
+
+  
+  
+
+
+
 
 <section id="absenceAdminSection" class="card admin-operation">
   <div class="section-head">
@@ -1781,7 +1722,7 @@ body{background:#f5f7fb!important}
   </section>
 </div>
 
-<footer class="app-footer"><img src="./assets/bia-honduras-logo.png" alt="BIA Honduras"> Control de Tiempos · PWA v2.9.0</footer>
+<footer class="app-footer"><img src="./assets/bia-honduras-logo.png" alt="BIA Honduras"> Control de Tiempos · PWA v2.8.2</footer>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <script type="module" src="./cronometros.js"></script>
 <script src="./pwa.js" defer></script>

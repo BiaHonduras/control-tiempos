@@ -36,18 +36,28 @@ const actividades=[
 'Aseo Andén | Botar Basura',
 'Aseo Parqueo',
 'Carga de Contenedores',
+'Carga de Camiones',
 'Descarga de Contenedores',
+'Descarga de Camiones',
 'Despacho Rutas Detalle',
+'Limpieza del Montacargas',
 'Orden Área Asignada',
 'Orden Bodega 033 | 095',
 'Preparación de Facturas',
 'Preparación de La Colonia',
 'Preparación de Walmart',
+'Flejado de Walmart y La Colonia',
 'Recoger Tarimas Vacías | Fleje | B033 - B095',
-'Preparación de Rutas de Detalle'
+'Preparación de Rutas de Detalle',
+'Toma de Inventario'
 ];
 const tipos=['Café','Representada','Mixto'];
-const actividadesCompartidas=new Set(['Preparación de Walmart','Preparación de La Colonia','Carga de Contenedores','Descarga de Contenedores']);
+// Actividades que permiten seleccionar varios colaboradores.
+const actividadesMultiples=new Set(['Preparación de Walmart','Preparación de La Colonia','Carga de Contenedores','Descarga de Contenedores','Flejado de Walmart y La Colonia']);
+// Solo estas continúan requiriendo mínimo dos participantes.
+const actividadesMinimoDos=new Set(['Preparación de Walmart','Preparación de La Colonia']);
+// Esta actividad permite 1 o 2 personas, pero no más.
+const actividadesMaximoDos=new Set(['Flejado de Walmart y La Colonia']);
 const timers=new Map();
 
 const slug=s=>String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\W+/g,'-').toLowerCase();
@@ -64,8 +74,8 @@ function segundosActuales(t){
 }
 function opcionesColaboradores(){return `<option value="">Seleccione un colaborador</option>${colaboradores.map(c=>`<option value="${c.id}">${esc(c.nombre)}</option>`).join('')}`}
 function botones(cat){return `<button class="primary" data-requires-online data-action="start" data-cat="${cat}">Iniciar</button><button class="warn" data-requires-online data-action="pause" data-cat="${cat}">Pausar</button><button class="primary" data-requires-online data-action="resume" data-cat="${cat}">Continuar</button><button class="ok" data-requires-online data-action="finish" data-cat="${cat}">Finalizar</button><button class="danger" data-requires-online data-action="cancel" data-cat="${cat}">Cancelar</button>`}
-function formularioPrep(){return `<article class="worker single-worker" id="card-prep"><h3>Preparación de pedidos / giras</h3><div class="form"><div style="grid-column:1/-1"><label>Colaboradores participantes</label><div class="participant-grid" id="prep-participant-grid">${colaboradores.map(c=>`<label class="participant-option"><input type="checkbox" name="prep-participante" value="${c.id}"> <span>${esc(c.nombre)}</span></label>`).join('')}</div><small>Puede seleccionar uno o varios colaboradores para la preparación.</small></div><div><label>Fecha</label><input id="prep-fecha" type="date" value="${hoy()}"></div><div><label>Zona</label><input id="prep-zona" placeholder="Zona o gira"></div><div><label>Tipo</label><select id="prep-tipo"><option value="">Seleccione</option>${tipos.map(x=>`<option>${x}</option>`).join('')}</select></div><div><label>Facturas</label><input id="prep-facturas" type="number" min="1"></div><div><label>Libras de la gira</label><input id="prep-libras" type="number" min="0" step=".01"></div></div><div class="timer" id="timer-prep">00:00:00</div><div class="desc" id="desc-prep">Seleccione uno o varios colaboradores</div><div class="conflict" id="conflict-prep"></div><div class="actions">${botones('preparacion')}<button class="light" type="button" id="nuevaPreparacionBtn">Nueva preparación</button></div></article>`}
-function formularioAct(){return `<article class="worker single-worker" id="card-act"><h3>Registro de actividad</h3><div class="form"><div id="act-single-wrap"><label>Colaborador</label><select id="act-colaborador">${opcionesColaboradores()}</select></div><div><label>Fecha</label><input id="act-fecha" type="date" value="${hoy()}"></div><div style="grid-column:span 2"><label>Actividad</label><select id="act-tipo"><option value="">Seleccione</option>${actividades.map(x=>`<option>${x}</option>`).join('')}</select></div><div id="act-shared-wrap" class="shared-selector" style="display:none;grid-column:1/-1"><label>Colaboradores participantes</label><div class="participant-grid">${colaboradores.map(c=>`<label class="participant-option"><input type="checkbox" name="act-participante" value="${c.id}"> <span>${esc(c.nombre)}</span></label>`).join('')}</div><small>Seleccione dos o más colaboradores para una actividad compartida.</small></div></div><div class="timer" id="timer-act">00:00:00</div><div class="desc" id="desc-act">Seleccione un colaborador</div><div class="conflict" id="conflict-act"></div><div class="actions">${botones('actividad')}<button class="light" type="button" id="nuevaActividadBtn">Nueva actividad</button></div></article>`}
+function formularioPrep(){return `<article class="worker single-worker" id="card-prep"><h3>Preparación de pedidos / giras</h3><div class="form"><div class="prep-collab-field" style="grid-column:1/-1"><label>Colaboradores participantes</label><details class="prep-multiselect" id="prep-colab-dropdown"><summary><span id="prep-colab-summary">Seleccione colaboradores</span><span class="prep-chevron">▾</span></summary><div class="prep-multiselect-menu" id="prep-participant-grid">${colaboradores.map(c=>`<label class="participant-option"><input type="checkbox" name="prep-participante" value="${c.id}"> <span>${esc(c.nombre)}</span></label>`).join('')}</div></details><small>Puede seleccionar uno o varios colaboradores.</small></div><div><label>Fecha</label><input id="prep-fecha" type="date" value="${hoy()}"></div><div><label>Zona</label><input id="prep-zona" placeholder="Zona o gira"></div><div><label>Tipo</label><select id="prep-tipo"><option value="">Seleccione</option>${tipos.map(x=>`<option>${x}</option>`).join('')}</select></div><div><label>Facturas</label><input id="prep-facturas" type="number" min="1"></div><div><label>Libras de la gira</label><input id="prep-libras" type="number" min="0" step=".01"></div></div><div class="timer" id="timer-prep">00:00:00</div><div class="desc" id="desc-prep">Seleccione uno o varios colaboradores</div><div class="conflict" id="conflict-prep"></div><div class="actions">${botones('preparacion')}<button class="light" type="button" id="nuevaPreparacionBtn">Nueva preparación</button></div></article>`}
+function formularioAct(){return `<article class="worker single-worker" id="card-act"><h3>Registro de actividad</h3><div class="form"><div id="act-single-wrap"><label>Colaborador</label><select id="act-colaborador">${opcionesColaboradores()}</select></div><div><label>Fecha</label><input id="act-fecha" type="date" value="${hoy()}"></div><div style="grid-column:span 2"><label>Actividad</label><select id="act-tipo"><option value="">Seleccione</option>${actividades.map(x=>`<option>${x}</option>`).join('')}</select></div><div id="act-shared-wrap" class="shared-selector" style="display:none;grid-column:1/-1"><label>Colaboradores participantes</label><div class="participant-grid">${colaboradores.map(c=>`<label class="participant-option"><input type="checkbox" name="act-participante" value="${c.id}"> <span>${esc(c.nombre)}</span></label>`).join('')}</div><small id="act-participant-hint">Seleccione uno o más colaboradores.</small></div></div><div class="timer" id="timer-act">00:00:00</div><div class="desc" id="desc-act">Seleccione un colaborador</div><div class="conflict" id="conflict-act"></div><div class="actions">${botones('actividad')}<button class="light" type="button" id="nuevaActividadBtn">Nueva actividad</button></div></article>`}
 
 function capturarEstadoFormularios(){
  return {
@@ -89,11 +99,12 @@ function restaurarEstadoFormularios(s){
  if(document.getElementById('prep-facturas'))document.getElementById('prep-facturas').value=s.prepFacturas||'';
  if(document.getElementById('prep-libras'))document.getElementById('prep-libras').value=s.prepLibras||'';
  document.querySelectorAll('input[name="prep-participante"]').forEach(x=>x.checked=(s.prepIds||[]).includes(x.value));
+ actualizarResumenColaboradoresPrep();
 
  if(document.getElementById('act-fecha'))document.getElementById('act-fecha').value=s.actFecha||hoy();
  if(document.getElementById('act-tipo'))document.getElementById('act-tipo').value=s.actTipo||'';
  actualizarModoActividad(false);
- if(actividadesCompartidas.has(s.actTipo)){
+ if(actividadesMultiples.has(s.actTipo)){
   document.querySelectorAll('input[name="act-participante"]').forEach(x=>x.checked=(s.actIds||[]).includes(x.value));
  }else if(document.getElementById('act-colaborador')){
   document.getElementById('act-colaborador').value=s.actId||'';
@@ -107,6 +118,7 @@ function renderColaboradores(estado=null){
  actualizarFormularioSeleccionado('preparacion');
  actualizarFormularioSeleccionado('actividad');
  actualizarDisponibilidadColaboradores();
+ actualizarResumenColaboradoresPrep();
 }
 
 function idsOcupados(){
@@ -147,11 +159,23 @@ function limpiarFormularioActividad(){
 }
 
 
+function actualizarResumenColaboradoresPrep(){
+ const summary=document.getElementById('prep-colab-summary');
+ if(!summary)return;
+ const ids=idsPreparacionSeleccionados();
+ if(!ids.length){summary.textContent='Seleccione colaboradores';return}
+ const nombres=ids.map(id=>colaboradores.find(c=>c.id===id)?.nombre).filter(Boolean);
+ if(nombres.length<=2)summary.textContent=nombres.join(', ');
+ else summary.textContent=`${nombres[0]}, ${nombres[1]} +${nombres.length-2}`;
+}
+
 function idsPreparacionSeleccionados(){
  return [...document.querySelectorAll('input[name="prep-participante"]:checked')].map(x=>x.value);
 }
 function limpiarFormularioPreparacion(){
  document.querySelectorAll('input[name="prep-participante"]').forEach(x=>x.checked=false);
+ actualizarResumenColaboradoresPrep();
+ const dd=document.getElementById('prep-colab-dropdown');if(dd)dd.open=false;
  document.getElementById('prep-fecha').value=hoy();
  document.getElementById('prep-zona').value='';
  document.getElementById('prep-tipo').value='';
@@ -161,10 +185,10 @@ function limpiarFormularioPreparacion(){
  actualizarDisponibilidadColaboradores();
 }
 
-function actividadEsCompartida(){return actividadesCompartidas.has(document.getElementById('act-tipo')?.value||'')}
+function actividadEsCompartida(){return actividadesMultiples.has(document.getElementById('act-tipo')?.value||'')}
 function idsActividadSeleccionados(){return actividadEsCompartida()?[...document.querySelectorAll('input[name="act-participante"]:checked')].map(x=>x.value):[document.getElementById('act-colaborador')?.value||''].filter(Boolean)}
 function idSeleccionado(cat){return cat==='preparacion'?(idsPreparacionSeleccionados()[0]||''):(idsActividadSeleccionados()[0]||document.getElementById('act-colaborador')?.value||'')}
-function actualizarModoActividad(refrescar=true){const shared=actividadEsCompartida();const sw=document.getElementById('act-shared-wrap'),one=document.getElementById('act-single-wrap');if(sw)sw.style.display=shared?'block':'none';if(one)one.style.display=shared?'none':'block';if(refrescar)actualizarFormularioSeleccionado('actividad')}
+function actualizarModoActividad(refrescar=true){const actividad=document.getElementById('act-tipo')?.value||'';const multiple=actividadesMultiples.has(actividad);const sw=document.getElementById('act-shared-wrap'),one=document.getElementById('act-single-wrap'),hint=document.getElementById('act-participant-hint');if(sw)sw.style.display=multiple?'block':'none';if(one)one.style.display=multiple?'none':'block';if(hint)hint.textContent=actividadesMinimoDos.has(actividad)?'Seleccione dos o más colaboradores para esta actividad.':actividadesMaximoDos.has(actividad)?'Seleccione uno o dos colaboradores para esta actividad.':'Seleccione uno o más colaboradores para esta actividad.';if(refrescar)actualizarFormularioSeleccionado('actividad')}
 function actualizarFormularioSeleccionado(cat){
  const pref=cat==='preparacion'?'prep':'act';
  const ids=cat==='preparacion'?idsPreparacionSeleccionados():idsActividadSeleccionados();
@@ -189,13 +213,14 @@ function aplicarTimerFormulario(t){
   document.getElementById('prep-libras').value=d.libras||'';
   const ids=participantesIds(t);
   document.querySelectorAll('input[name="prep-participante"]').forEach(x=>x.checked=ids.includes(x.value));
+  actualizarResumenColaboradoresPrep();
  }else{
   if(!participantesIds(t).some(id=>idsActividadSeleccionados().includes(id)))return;
   document.getElementById('act-fecha').value=d.fecha||hoy();
   document.getElementById('act-tipo').value=d.actividad||'';
   actualizarModoActividad(false);
   const ids=participantesIds(t);
-  if(actividadesCompartidas.has(d.actividad)){
+  if(actividadesMultiples.has(d.actividad)){
    document.querySelectorAll('input[name="act-participante"]').forEach(x=>x.checked=ids.includes(x.value));
   }else{
    document.getElementById('act-colaborador').value=ids[0]||t.colaborador_id||'';
@@ -257,11 +282,12 @@ document.addEventListener('click',e=>{
  const pref=t.categoria==='preparacion'?'prep':'act';
  if(t.categoria==='preparacion'){
   document.querySelectorAll('input[name="prep-participante"]').forEach(x=>x.checked=participantesIds(t).includes(x.value));
+  actualizarResumenColaboradoresPrep();
  }else{
   const d=t.datos||{};
   document.getElementById('act-tipo').value=d.actividad||'';
   actualizarModoActividad();
-  if(actividadesCompartidas.has(d.actividad)){
+  if(actividadesMultiples.has(d.actividad)){
    const ids=participantesIds(t);
    document.querySelectorAll('input[name="act-participante"]').forEach(x=>x.checked=ids.includes(x.value));
   }else{
@@ -293,8 +319,10 @@ function datosFormulario(cat){
  const nombres=ids.map(id=>colaboradores.find(c=>c.id===id)?.nombre).filter(Boolean);
  const d={fecha:document.getElementById('act-fecha').value,actividad,participantes_ids:ids,participantes_nombres:nombres};
  if(!d.fecha||!d.actividad)throw new Error('Seleccione fecha y actividad.');
- if(actividadesCompartidas.has(actividad)&&ids.length<2)throw new Error('Seleccione al menos dos colaboradores para esta actividad compartida.');
- if(!actividadesCompartidas.has(actividad)&&ids.length!==1)throw new Error('Seleccione un colaborador.');
+ if(actividadesMinimoDos.has(actividad)&&ids.length<2)throw new Error('Seleccione al menos dos colaboradores para esta actividad.');
+ if(actividadesMaximoDos.has(actividad)&&(ids.length<1||ids.length>2))throw new Error('Seleccione uno o dos colaboradores para esta actividad.');
+ if(actividadesMultiples.has(actividad)&&!actividadesMinimoDos.has(actividad)&&!actividadesMaximoDos.has(actividad)&&ids.length<1)throw new Error('Seleccione al menos un colaborador.');
+ if(!actividadesMultiples.has(actividad)&&ids.length!==1)throw new Error('Seleccione un colaborador.');
  return d;
 }
 function mostrarConflicto(cat,msg){const el=document.getElementById(`conflict-${cat==='preparacion'?'prep':'act'}`);if(!el)return;el.textContent=msg;el.style.display='block';setTimeout(()=>el.style.display='none',6000)}
@@ -307,7 +335,7 @@ async function iniciar(cat){
  if(!navigator.onLine)return mostrarConflicto(cat,'Sin conexión. La operación debe validarse en Supabase.');
  try{
   if(cat==='actividad'){
-   await rpc('iniciar_actividad_v7',{p_colaborador_ids:ids,p_datos:datos});
+   await rpc('iniciar_actividad_v8',{p_colaborador_ids:ids,p_datos:datos});
   }else{
    await rpc('iniciar_preparacion_v7',{p_colaborador_ids:ids,p_datos:datos});
   }
@@ -408,7 +436,7 @@ document.addEventListener('click',e=>{
  const {action,cat}=b.dataset;
  action==='start'?iniciar(cat):accionar(cat,action);
 });
-document.addEventListener('change',e=>{if(e.target.name==='prep-participante')actualizarFormularioSeleccionado('preparacion');if(e.target.id==='act-colaborador')actualizarFormularioSeleccionado('actividad');if(e.target.id==='act-tipo')actualizarModoActividad();if(e.target.name==='act-participante')actualizarFormularioSeleccionado('actividad')});
+document.addEventListener('change',e=>{if(e.target.name==='prep-participante'){actualizarResumenColaboradoresPrep();actualizarFormularioSeleccionado('preparacion')}if(e.target.id==='act-colaborador')actualizarFormularioSeleccionado('actividad');if(e.target.id==='act-tipo')actualizarModoActividad();if(e.target.name==='act-participante')actualizarFormularioSeleccionado('actividad')});
 function aplicarTimer(t){timers.set(t.id,t);aplicarTimerFormulario(t)}
 function limpiarTarjetas(){timers.clear();renderColaboradores()}
 
@@ -725,10 +753,13 @@ function idsParticipantesEdicion(){
 }
 function actualizarAyudaParticipantesEdicion(){
  const actividad=document.getElementById('editActividad').value;
- const compartida=actividadesCompartidas.has(actividad);
- document.getElementById('editParticipantHint').textContent=compartida
+ const multiple=actividadesMultiples.has(actividad);
+ const minimoDos=actividadesMinimoDos.has(actividad);
+ document.getElementById('editParticipantHint').textContent=minimoDos
   ?'Esta actividad requiere dos o más colaboradores.'
-  :'Esta actividad requiere exactamente un colaborador.';
+  :multiple
+   ?'Esta actividad permite uno o más colaboradores.'
+   :'Esta actividad requiere exactamente un colaborador.';
 }
 document.getElementById('editActividad').addEventListener('change',actualizarAyudaParticipantesEdicion);
 
@@ -787,19 +818,23 @@ editForm.addEventListener('submit',async e=>{
  }else{
   const actividad=document.getElementById('editActividad').value;
   const colaborador_ids=idsParticipantesEdicion();
-  const minimo=actividadesCompartidas.has(actividad)?2:1;
-  const maximo=actividadesCompartidas.has(actividad)?999:1;
+  const minimo=actividadesMinimoDos.has(actividad)?2:1;
+  const maximo=actividadesMaximoDos.has(actividad)?2:(actividadesMultiples.has(actividad)?999:1);
   if(colaborador_ids.length<minimo||colaborador_ids.length>maximo){
-   return alert(actividadesCompartidas.has(actividad)
+   return alert(actividadesMinimoDos.has(actividad)
     ?'Seleccione al menos dos colaboradores.'
-    :'Seleccione exactamente un colaborador.');
+    :actividadesMaximoDos.has(actividad)
+     ?'Seleccione uno o dos colaboradores.'
+     :actividadesMultiples.has(actividad)
+      ?'Seleccione al menos un colaborador.'
+      :'Seleccione exactamente un colaborador.');
   }
   cambios={actividad,colaborador_ids};
  }
 
  if(!confirm('¿Guardar esta corrección? La modificación quedará registrada en auditoría.'))return;
  try{
-  await rpc('admin_actualizar_registro_historial',{
+  await rpc('admin_actualizar_registro_historial_v2',{
    p_tipo:tipo,
    p_id:id,
    p_cambios:cambios,
@@ -819,6 +854,11 @@ document.addEventListener('click',e=>{
  abrirEditorRegistro(btn.dataset.editRecord,btn.dataset.recordId);
 });
 
+
+document.addEventListener('click',e=>{
+ const dd=document.getElementById('prep-colab-dropdown');
+ if(dd?.open && !dd.contains(e.target))dd.open=false;
+});
 
 // ===== GESTIÓN DE PARTICIPANTES EN ACTIVIDADES ACTIVAS V2.6.4 =====
 const teamModal=document.getElementById('teamModal');
@@ -1315,5 +1355,5 @@ async function construirReporte(preparaciones,actividades,ausencias,colaboradore
 
 descargarExcelBtn.addEventListener('click',async()=>{const desde=reporteDesde.value,hasta=reporteHasta.value;if(!desde||!hasta)return alert('Seleccione la fecha inicial y final.');if(desde>hasta)return alert('La fecha inicial no puede ser mayor que la fecha final.');if(!navigator.onLine)return alert('Se necesita conexión para consultar la información de Supabase.');if(typeof ExcelJS==='undefined')return alert('No se pudo cargar el generador de Excel. Revise la conexión.');const original=descargarExcelBtn.textContent;descargarExcelBtn.disabled=true;descargarExcelBtn.textContent='Generando dashboard...';reporteMensaje.textContent='Consultando información y construyendo gráficos ejecutivos...';try{const [p,a,ausencias,colsReporte,participaciones,participacionesPrep]=await Promise.all([obtenerTodosRegistros('historial_preparaciones',desde,hasta),obtenerTodosRegistros('historial_actividades',desde,hasta),obtenerAusenciasPeriodo(desde,hasta),obtenerColaboradoresReporte(),obtenerParticipacionesPeriodo(desde,hasta),obtenerParticipacionesPreparacionPeriodo(desde,hasta)]);if(!p.length&&!a.length&&!ausencias.length){reporteMensaje.textContent='No se encontraron registros ni ausencias en el período seleccionado.';return}const libro=await construirReporte(p,a,ausencias,colsReporte,participaciones,desde,hasta),buffer=await libro.xlsx.writeBuffer();descargarBlob(new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),`Dashboard_Productividad_BIA_${desde}_al_${hasta}.xlsx`);reporteMensaje.textContent=`Dashboard generado con ${p.length} preparaciones, ${a.length} actividades y ${ausencias.length} registros de ausencia.`}catch(err){console.error(err);reporteMensaje.textContent='No se pudo generar el reporte: '+err.message}finally{descargarExcelBtn.disabled=false;descargarExcelBtn.textContent=original}});
 
-supabase.channel('cronometros-operacion-v265').on('postgres_changes',{event:'*',schema:'public',table:'cronometros'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'historial_preparaciones'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'historial_actividades'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'colaboradores'},()=>{cargarTodo();if(esAdmin)cargarAdmin()}).on('postgres_changes',{event:'*',schema:'public',table:'ausencias_personal'},()=>{if(esAdmin)cargarAusenciasAdmin();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'metas_productividad'},()=>{cargarMetas();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'pausas_cronometros'},()=>{if(esAdmin)cargarAuditoria('pausas')}).on('postgres_changes',{event:'*',schema:'public',table:'cierres_diarios'},()=>{cargarEstadoCierre();if(esAdmin)cargarAuditoria('cierres')}).on('postgres_changes',{event:'*',schema:'public',table:'actividad_participaciones'},()=>{cargarTodo();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'preparacion_participaciones'},()=>{cargarTodo();actualizarDashboard()}).subscribe();
+supabase.channel('cronometros-operacion-v293').on('postgres_changes',{event:'*',schema:'public',table:'cronometros'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'historial_preparaciones'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'historial_actividades'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'colaboradores'},()=>{cargarTodo();if(esAdmin)cargarAdmin()}).on('postgres_changes',{event:'*',schema:'public',table:'ausencias_personal'},()=>{if(esAdmin)cargarAusenciasAdmin();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'metas_productividad'},()=>{cargarMetas();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'pausas_cronometros'},()=>{if(esAdmin)cargarAuditoria('pausas')}).on('postgres_changes',{event:'*',schema:'public',table:'cierres_diarios'},()=>{cargarEstadoCierre();if(esAdmin)cargarAuditoria('cierres')}).on('postgres_changes',{event:'*',schema:'public',table:'actividad_participaciones'},()=>{cargarTodo();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'preparacion_participaciones'},()=>{cargarTodo();actualizarDashboard()}).subscribe();
 try{await cargarMetas();await cargarTodo();await actualizarDashboard();if(esAdmin)await cargarAuditoria()}catch(e){document.getElementById('conexion').textContent='No se pudo cargar la información: '+e.message}
