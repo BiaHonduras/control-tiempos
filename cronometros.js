@@ -834,7 +834,7 @@ editForm.addEventListener('submit',async e=>{
 
  if(!confirm('¿Guardar esta corrección? La modificación quedará registrada en auditoría.'))return;
  try{
-  await rpc('admin_actualizar_registro_historial_v2',{
+  await rpc('admin_actualizar_registro_historial_v3',{
    p_tipo:tipo,
    p_id:id,
    p_cambios:cambios,
