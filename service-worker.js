@@ -1,4 +1,4 @@
-const CACHE_NAME='bia-control-v2.9.6';
+const CACHE_NAME='bia-control-v3.0.0';
 const APP_SHELL=[
   './','./index.html','./cronometros.html','./cba.html','./src.html','./cronometros.js','./supabase-config.js',
   './pwa.js','./offline.html',

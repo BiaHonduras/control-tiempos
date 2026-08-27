@@ -1,0 +1,112 @@
+BIA HONDURAS · CONTROL DE TIEMPOS v3.0.0
+SEDES INDEPENDIENTES: SPS / CBA / SRC
+
+CAMBIOS PRINCIPALES
+
+1. PRINCIPAL AHORA SE LLAMA SPS
+- cronometros.html = SPS
+- cba.html = CBA
+- src.html = SRC
+
+2. INFORMACIÓN TOTALMENTE INDEPENDIENTE
+Cada sede maneja por separado:
+- Colaboradores
+- Catálogo de actividades
+- Cronómetros activos
+- Preparaciones
+- Actividades
+- Participaciones individuales
+- Historiales
+- Ausencias
+- Metas de productividad
+- Apertura/cierre diario
+- Auditorías
+- Dashboard
+- Excel
+
+Todos los datos existentes antes de esta actualización se conservan como SPS.
+CBA y SRC arrancan sin historiales ni colaboradores, pero reciben una copia inicial del catálogo de actividades y metas para poder configurarlas de forma independiente.
+
+3. USUARIO MAESTRO
+Correo maestro configurado:
+javierh@biabrands.co
+
+El usuario maestro:
+- Tiene acceso a SPS, CBA y SRC.
+- Es administrador en las tres sedes.
+- Puede abrir/cerrar días.
+- Puede crear/asignar usuarios.
+- Puede asignar un usuario a una o varias sedes.
+
+4. USUARIOS POR SEDE
+Los accesos tienen:
+- Correo
+- Nombre
+- Sede
+- Rol: Administrador / Solo consulta
+- Permiso de apertura/cierre
+- Estado activo/inactivo
+
+Un mismo usuario puede estar asignado a varias sedes con permisos diferentes.
+
+5. CREACIÓN SEGURA DE USUARIOS
+Para crear una CUENTA NUEVA de Supabase Auth desde la aplicación se incluye:
+supabase/functions/admin-users/index.ts
+
+No se utiliza Service Role Key en el navegador.
+La Edge Function valida que quien crea usuarios sea javierh@biabrands.co.
+
+INSTALACIÓN
+
+PASO 1 · BASE DE DATOS
+En Supabase > SQL Editor ejecute:
+actualizacion_v3_0_sedes_usuarios.sql
+
+Al terminar, los datos anteriores quedan bajo SPS.
+
+PASO 2 · EDGE FUNCTION PARA CREAR USUARIOS NUEVOS
+Opción con Supabase CLI:
+
+supabase functions deploy admin-users
+
+La función utiliza automáticamente las variables seguras del proyecto:
+SUPABASE_URL
+SUPABASE_SERVICE_ROLE_KEY
+
+También puede crear la función desde Supabase Dashboard > Edge Functions copiando el contenido de:
+supabase/functions/admin-users/index.ts
+
+IMPORTANTE:
+- Para asignar a una sede un usuario que YA existe en Supabase Auth, puede dejar la contraseña temporal vacía.
+- Para crear un usuario NUEVO debe colocar una contraseña temporal de al menos 8 caracteres y tener desplegada la Edge Function.
+
+PASO 3 · WEB / PWA
+Reemplace todos los archivos publicados por esta versión.
+Haga Ctrl + F5 en computadora.
+En Android cierre completamente la PWA. Si conserva archivos anteriores, borrar caché o reinstalar.
+
+PRUEBA RECOMENDADA
+
+A. SPS
+- Confirmar que aparece la información histórica existente.
+- Crear/editar un colaborador SPS.
+
+B. CBA
+- Confirmar que no aparecen colaboradores ni historiales de SPS.
+- Crear un colaborador CBA.
+- Iniciar una actividad CBA.
+- Confirmar que SPS no muestra el registro.
+
+C. SRC
+- Repetir la prueba de independencia.
+
+D. USUARIO MAESTRO
+- Ingresar con javierh@biabrands.co.
+- Abrir Administración.
+- Revisar el módulo Usuarios y accesos.
+- Crear o asignar un usuario a CBA.
+- Iniciar con ese usuario y confirmar que solo aparecen las sedes autorizadas.
+
+SEGURIDAD
+La separación no depende solamente de filtros en JavaScript.
+La actualización activa políticas RLS por sede en Supabase. Un usuario sin acceso a CBA no puede consultar datos de CBA directamente desde la API.

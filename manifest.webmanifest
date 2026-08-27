@@ -1,5 +1,5 @@
 {
-  "name": "Control de Tiempos BIA Honduras",
+  "name": "BIA Control de Tiempos · SPS CBA SRC",
   "short_name": "BIA Tiempos",
   "description": "Control de preparación de pedidos y actividades de bodega.",
   "id": "./index.html",
@@ -72,35 +72,38 @@
   ],
   "shortcuts": [
     {
-      "name": "Abrir cronómetros",
-      "short_name": "Cronómetros",
+      "name": "SPS",
+      "short_name": "SPS",
       "url": "./cronometros.html",
       "icons": [
         {
           "src": "./icons/icon-192.png",
-          "sizes": "192x192"
+          "sizes": "192x192",
+          "type": "image/png"
         }
       ]
     },
     {
-      "name": "Abrir CBA",
+      "name": "CBA",
       "short_name": "CBA",
       "url": "./cba.html",
       "icons": [
         {
           "src": "./icons/icon-192.png",
-          "sizes": "192x192"
+          "sizes": "192x192",
+          "type": "image/png"
         }
       ]
     },
     {
-      "name": "Abrir SRC",
+      "name": "SRC",
       "short_name": "SRC",
       "url": "./src.html",
       "icons": [
         {
           "src": "./icons/icon-192.png",
-          "sizes": "192x192"
+          "sizes": "192x192",
+          "type": "image/png"
         }
       ]
     }

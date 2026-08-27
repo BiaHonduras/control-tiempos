@@ -4,6 +4,9 @@ let colaboradores=[];
 let esAdmin=false;
 let puedeCierre=false;
 let usuarioActualId=null;
+const SEDE_ACTUAL=(document.body?.dataset?.sede||'SPS').toUpperCase();
+let esMaestro=false;
+let sedesPermitidas=[];
 const historialPrepMap=new Map();
 const historialActMap=new Map();
 
@@ -71,7 +74,7 @@ function validarCantidadParticipantesActividad(nombre,cantidad){
 }
 async function cargarCatalogoActividades(){
  try{
-  const {data,error}=await supabase.from('actividades_catalogo').select('*').order('orden').order('nombre');
+  const {data,error}=await supabase.from('actividades_catalogo').select('*').eq('sede',SEDE_ACTUAL).order('orden').order('nombre');
   if(error)throw error;
   if(data?.length)aplicarCatalogoActividades(data);
  }catch(e){
@@ -322,6 +325,7 @@ function datosFormulario(cat){
   const ids=idsPreparacionSeleccionados();
   const nombres=ids.map(id=>colaboradores.find(c=>c.id===id)?.nombre).filter(Boolean);
   const d={
+   sede:SEDE_ACTUAL,
    fecha_preparacion:document.getElementById('prep-fecha').value,
    zona:document.getElementById('prep-zona').value.trim(),
    tipo:document.getElementById('prep-tipo').value,
@@ -337,13 +341,14 @@ function datosFormulario(cat){
  const actividad=document.getElementById('act-tipo').value;
  const ids=idsActividadSeleccionados();
  const nombres=ids.map(id=>colaboradores.find(c=>c.id===id)?.nombre).filter(Boolean);
- const d={fecha:document.getElementById('act-fecha').value,actividad,participantes_ids:ids,participantes_nombres:nombres};
+ const d={sede:SEDE_ACTUAL,fecha:document.getElementById('act-fecha').value,actividad,participantes_ids:ids,participantes_nombres:nombres};
  if(!d.fecha||!d.actividad)throw new Error('Seleccione fecha y actividad.');
  validarCantidadParticipantesActividad(actividad,ids.length);
  return d;
 }
 function mostrarConflicto(cat,msg){const el=document.getElementById(`conflict-${cat==='preparacion'?'prep':'act'}`);if(!el)return;el.textContent=msg;el.style.display='block';setTimeout(()=>el.style.display='none',6000)}
-async function rpc(nombre,args){const {data,error}=await supabase.rpc(nombre,args);if(error)throw error;return data}
+async function rpc(nombre,args={}){const payload={...args,p_sede:SEDE_ACTUAL};const {data,error}=await supabase.rpc(nombre,payload);if(error)throw error;return data}
+function paginaSede(s){return s==='CBA'?'./cba.html':s==='SRC'?'./src.html':'./cronometros.html'}
 async function iniciar(cat){
  if(!esAdmin)throw new Error('SOLO_ADMINISTRADOR');
  const datos=datosFormulario(cat);
@@ -352,9 +357,9 @@ async function iniciar(cat){
  if(!navigator.onLine)return mostrarConflicto(cat,'Sin conexión. La operación debe validarse en Supabase.');
  try{
   if(cat==='actividad'){
-   await rpc('iniciar_actividad_v9',{p_colaborador_ids:ids,p_datos:datos});
+   await rpc('iniciar_actividad_sede_v1',{p_colaborador_ids:ids,p_datos:datos});
   }else{
-   await rpc('iniciar_preparacion_v7',{p_colaborador_ids:ids,p_datos:datos});
+   await rpc('iniciar_preparacion_sede_v1',{p_colaborador_ids:ids,p_datos:datos});
   }
   await cargarTodo();
   if(cat==='actividad')limpiarFormularioActividad();
@@ -377,18 +382,18 @@ async function accionarTimerDirecto(timerId,expectedVersion,accion){
  try{
   const version=Number(expectedVersion||t.version);
   if(accion==='finish'){
-   await rpc('finalizar_cronometro_v6',{p_id:timerId,p_expected_version:version});
+   await rpc('finalizar_cronometro_sede_v1',{p_id:timerId,p_expected_version:version});
   }else if(accion==='cancel'){
-   await rpc('cancelar_cronometro_v6',{p_id:timerId,p_expected_version:version});
+   await rpc('cancelar_cronometro_sede_v1',{p_id:timerId,p_expected_version:version});
   }else{
    if(accion==='pause'){
     const motivo=prompt('Indique el motivo de la pausa:');
     if(motivo===null||motivo.trim().length<3)return;
-    await rpc('admin_pausar_cronometro_v2',{p_id:timerId,p_expected_version:version,p_motivo:motivo.trim()});
+    await rpc('pausar_cronometro_sede_v1',{p_id:timerId,p_expected_version:version,p_motivo:motivo.trim()});
    }else if(accion==='resume'){
-    await rpc('admin_reanudar_cronometro_v2',{p_id:timerId,p_expected_version:version});
+    await rpc('reanudar_cronometro_sede_v1',{p_id:timerId,p_expected_version:version});
    }else{
-    await rpc('cambiar_estado_cronometro',{p_id:timerId,p_expected_version:version,p_accion:accion});
+    await rpc('cambiar_estado_cronometro_sede_v1',{p_id:timerId,p_expected_version:version,p_accion:accion});
    }
   }
   await cargarTodo();
@@ -412,14 +417,14 @@ async function accionar(cat,accion){
  const t=[...timers.values()].find(x=>x.categoria===cat&&participantesIds(x).some(id=>ids.includes(id)));
  if(!t)return mostrarConflicto(cat,'La selección no pertenece a un conteo activo. Si desea iniciar uno nuevo, use Iniciar.');
  try{
-  if(accion==='finish')await rpc('finalizar_cronometro_v6',{p_id:t.id,p_expected_version:t.version});
-  else if(accion==='cancel')await rpc('cancelar_cronometro_v6',{p_id:t.id,p_expected_version:t.version});
+  if(accion==='finish')await rpc('finalizar_cronometro_sede_v1',{p_id:t.id,p_expected_version:t.version});
+  else if(accion==='cancel')await rpc('cancelar_cronometro_sede_v1',{p_id:t.id,p_expected_version:t.version});
   else if(accion==='pause'){
    const motivo=prompt('Indique el motivo de la pausa:');
    if(motivo===null||motivo.trim().length<3)return;
-   await rpc('admin_pausar_cronometro_v2',{p_id:t.id,p_expected_version:t.version,p_motivo:motivo.trim()});
+   await rpc('pausar_cronometro_sede_v1',{p_id:t.id,p_expected_version:t.version,p_motivo:motivo.trim()});
   }else if(accion==='resume'){
-   await rpc('admin_reanudar_cronometro_v2',{p_id:t.id,p_expected_version:t.version});
+   await rpc('reanudar_cronometro_sede_v1',{p_id:t.id,p_expected_version:t.version});
   }
   await cargarTodo();
  }catch(e){
@@ -490,12 +495,12 @@ async function cargarTodo(){
   {data:actParts,error:e4},
   {data:prepParts,error:e5}
  ]=await Promise.all([
-  supabase.from('colaboradores').select('*').eq('activo',true).order('orden').order('nombre'),
-  supabase.from('cronometros').select('*').in('estado',['ejecucion','pausado']).order('actualizado_en',{ascending:false}),
-  supabase.from('historial_preparaciones').select('*').order('created_at',{ascending:false}).limit(200),
-  supabase.from('historial_actividades').select('*').order('created_at',{ascending:false}).limit(200),
-  supabase.from('actividad_participaciones').select('cronometro_id,colaborador_id,colaborador_nombre,estado').eq('estado','activo'),
-  supabase.from('preparacion_participaciones').select('cronometro_id,colaborador_id,colaborador_nombre,estado').eq('estado','activo')
+  supabase.from('colaboradores').select('*').eq('sede',SEDE_ACTUAL).eq('activo',true).order('orden').order('nombre'),
+  supabase.from('cronometros').select('*').eq('sede',SEDE_ACTUAL).in('estado',['ejecucion','pausado']).order('actualizado_en',{ascending:false}),
+  supabase.from('historial_preparaciones').select('*').eq('sede',SEDE_ACTUAL).order('created_at',{ascending:false}).limit(200),
+  supabase.from('historial_actividades').select('*').eq('sede',SEDE_ACTUAL).order('created_at',{ascending:false}).limit(200),
+  supabase.from('actividad_participaciones').select('cronometro_id,colaborador_id,colaborador_nombre,estado').eq('sede',SEDE_ACTUAL).eq('estado','activo'),
+  supabase.from('preparacion_participaciones').select('cronometro_id,colaborador_id,colaborador_nombre,estado').eq('sede',SEDE_ACTUAL).eq('estado','activo')
  ]);
  if(ec||e1||e2||e3||e4||e5)throw ec||e1||e2||e3||e4||e5;
 
@@ -551,27 +556,38 @@ async function cargarTodo(){
 
 async function verificarAdmin(userId){
  usuarioActualId=userId;
- const {data,error}=await supabase.from('perfiles').select('rol,puede_cierre_dia').eq('id',userId).maybeSingle();
- if(error)console.error(error);
- esAdmin=data?.rol==='admin';
- puedeCierre=esAdmin||data?.puede_cierre_dia===true;
+ const {data,error}=await supabase.rpc('obtener_acceso_sede',{p_sede:SEDE_ACTUAL});
+ if(error){console.error(error);throw error}
+ const acc=Array.isArray(data)?data[0]:data;
+ esMaestro=acc?.es_maestro===true;
+ esAdmin=esMaestro||acc?.rol==='admin';
+ puedeCierre=esAdmin||acc?.puede_cierre_dia===true;
+ sedesPermitidas=Array.isArray(acc?.sedes)?acc.sedes:[];
+ if(!acc?.permitido){
+   const destino=sedesPermitidas[0];
+   if(destino&&destino!==SEDE_ACTUAL){location.replace(paginaSede(destino));return}
+   document.querySelector('.container').innerHTML=`<div class="site-access-denied"><h2>Sin acceso a ${SEDE_ACTUAL}</h2><div>Su usuario no tiene permiso para esta sede. Solicite acceso al usuario maestro.</div></div>`;
+   return;
+ }
+ document.querySelectorAll('[data-area-link]').forEach(a=>{const s=(a.dataset.areaLink||'').toUpperCase();a.hidden=!esMaestro&&!sedesPermitidas.includes(s)});
  document.body.classList.toggle('viewer-mode',!esAdmin);
  document.body.classList.toggle('can-close',puedeCierre);
- document.getElementById('adminOpenBtn').hidden=!esAdmin;
- document.getElementById('viewerNotice').hidden=esAdmin;
- document.getElementById('roleBadge').textContent=esAdmin?'Administrador':puedeCierre?'Consulta + Cierre':'Solo lectura';
- if(!esAdmin&&puedeCierre)document.getElementById('viewerNotice').textContent='Puede observar procesos activos, descargar el Excel y gestionar apertura/cierre de día.';
+ document.getElementById('adminOpenBtn').hidden=!esAdmin&&!esMaestro;
+ document.getElementById('viewerNotice').hidden=esAdmin||esMaestro;
+ document.getElementById('roleBadge').textContent=esMaestro?'Maestro':esAdmin?`Administrador ${SEDE_ACTUAL}`:puedeCierre?'Consulta + Cierre':'Solo lectura';
  document.querySelectorAll('.admin-only-col').forEach(el=>el.hidden=!esAdmin);
+ const masterSection=document.getElementById('userAccessAdminSection');if(masterSection)masterSection.hidden=!esMaestro;
+ const sedeInput=document.getElementById('accessSede');if(sedeInput)sedeInput.value=SEDE_ACTUAL;
  renderActivosSuperiores();
  if(esAdmin)cargarAusenciasAdmin();
  await cargarEstadoCierre();
 }
 async function cargarAdmin(){
- if(!esAdmin)return;
+ if(!esAdmin&&!esMaestro)return;
  const [{data,error},{data:usuarios,error:eu},{data:acts,error:ea}]=await Promise.all([
-  supabase.from('colaboradores').select('*').order('activo',{ascending:false}).order('orden').order('nombre'),
-  supabase.rpc('admin_listar_usuarios_cierre'),
-  supabase.from('actividades_catalogo').select('*').order('activo',{ascending:false}).order('orden').order('nombre')
+  supabase.from('colaboradores').select('*').eq('sede',SEDE_ACTUAL).order('activo',{ascending:false}).order('orden').order('nombre'),
+  supabase.rpc('listar_usuarios_sede_v1',{p_sede:SEDE_ACTUAL}),
+  supabase.from('actividades_catalogo').select('*').eq('sede',SEDE_ACTUAL).order('activo',{ascending:false}).order('orden').order('nombre')
  ]);
  if(error||eu||ea)throw error||eu||ea;
  document.getElementById('collabTable').innerHTML=(data||[]).map(c=>`<tr><td>${esc(c.nombre)}</td><td>${esc(c.codigo||'')}</td><td><span class="${c.activo?'status-active':'status-inactive'}">${c.activo?'Activo':'Inactivo'}</span></td><td><button class="light" data-edit-collab='${JSON.stringify({id:c.id,nombre:c.nombre,codigo:c.codigo||''}).replace(/'/g,"&#39;")}'>Editar</button> <button class="${c.activo?'danger':'ok'}" data-toggle-collab="${c.id}" data-new-state="${!c.activo}">${c.activo?'Desactivar':'Activar'}</button></td></tr>`).join('');
@@ -580,9 +596,9 @@ async function cargarAdmin(){
  const at=document.getElementById('activityCatalogTable');
  if(at)at.innerHTML=(acts||[]).map(a=>{const max=a.max_participantes==null?'Sin límite':a.max_participantes;const regla=a.min_participantes===1&&a.max_participantes===1?'1 persona':a.min_participantes===1&&a.max_participantes===2?'1 a 2':a.min_participantes===1&&a.max_participantes==null?'1 o más':a.min_participantes===2&&a.max_participantes==null?'Mínimo 2':`${a.min_participantes} a ${max}`;return `<tr><td>${esc(a.nombre)}</td><td>${esc(regla)}</td><td>${Number(a.orden||100)}</td><td><span class="${a.activo?'status-active':'status-inactive'}">${a.activo?'Activa':'Inactiva'}</span></td><td><button class="light" data-edit-activity='${JSON.stringify({id:a.id,nombre:a.nombre,min:a.min_participantes,max:a.max_participantes,orden:a.orden||100}).replace(/'/g,"&#39;")}'>Editar</button> <button class="${a.activo?'danger':'ok'}" data-toggle-activity="${a.id}" data-new-state="${!a.activo}">${a.activo?'Desactivar':'Activar'}</button> <button class="danger" data-delete-activity="${a.id}">Eliminar</button></td></tr>`}).join('');
 }
-const panel=document.getElementById('adminPanel');document.getElementById('adminOpenBtn').addEventListener('click',async()=>{panel.hidden=false;await cargarAdmin();panel.scrollIntoView({behavior:'smooth'})});document.getElementById('adminCloseBtn').addEventListener('click',()=>panel.hidden=true);document.getElementById('collabCancelEdit').addEventListener('click',()=>document.getElementById('collabForm').reset());
-document.getElementById('collabForm').addEventListener('submit',async e=>{e.preventDefault();const id=document.getElementById('collabId').value||null,nombre=document.getElementById('collabNombre').value.trim(),codigo=document.getElementById('collabCodigo').value.trim()||null;try{await rpc('admin_guardar_colaborador',{p_id:id,p_nombre:nombre,p_codigo:codigo});e.target.reset();document.getElementById('collabId').value='';await Promise.all([cargarAdmin(),cargarTodo()]);document.getElementById('adminMessage').textContent='Colaborador guardado correctamente.'}catch(err){document.getElementById('adminMessage').textContent=err.message}});
-document.addEventListener('click',async e=>{const edit=e.target.closest('[data-edit-collab]');if(edit){const c=JSON.parse(edit.dataset.editCollab);document.getElementById('collabId').value=c.id;document.getElementById('collabNombre').value=c.nombre;document.getElementById('collabCodigo').value=c.codigo;return}const tog=e.target.closest('[data-toggle-collab]');if(tog){try{await rpc('admin_cambiar_estado_colaborador',{p_id:tog.dataset.toggleCollab,p_activo:tog.dataset.newState==='true'});await Promise.all([cargarAdmin(),cargarTodo()])}catch(err){document.getElementById('adminMessage').textContent=err.message}}});
+const panel=document.getElementById('adminPanel');document.getElementById('adminOpenBtn').addEventListener('click',async()=>{panel.hidden=false;await cargarAdmin();if(esMaestro)await cargarUsuariosAcceso();panel.scrollIntoView({behavior:'smooth'})});document.getElementById('adminCloseBtn').addEventListener('click',()=>panel.hidden=true);document.getElementById('collabCancelEdit').addEventListener('click',()=>document.getElementById('collabForm').reset());
+document.getElementById('collabForm').addEventListener('submit',async e=>{e.preventDefault();const id=document.getElementById('collabId').value||null,nombre=document.getElementById('collabNombre').value.trim(),codigo=document.getElementById('collabCodigo').value.trim()||null;try{await rpc('guardar_colaborador_sede_v1',{p_id:id,p_nombre:nombre,p_codigo:codigo});e.target.reset();document.getElementById('collabId').value='';await Promise.all([cargarAdmin(),cargarTodo()]);document.getElementById('adminMessage').textContent='Colaborador guardado correctamente.'}catch(err){document.getElementById('adminMessage').textContent=err.message}});
+document.addEventListener('click',async e=>{const edit=e.target.closest('[data-edit-collab]');if(edit){const c=JSON.parse(edit.dataset.editCollab);document.getElementById('collabId').value=c.id;document.getElementById('collabNombre').value=c.nombre;document.getElementById('collabCodigo').value=c.codigo;return}const tog=e.target.closest('[data-toggle-collab]');if(tog){try{await rpc('cambiar_estado_colaborador_sede_v1',{p_id:tog.dataset.toggleCollab,p_activo:tog.dataset.newState==='true'});await Promise.all([cargarAdmin(),cargarTodo()])}catch(err){document.getElementById('adminMessage').textContent=err.message}}});
 const activityCatalogForm=document.getElementById('activityCatalogForm');
 function limpiarActividadAdmin(){activityCatalogForm?.reset();if(document.getElementById('activityCatalogId'))document.getElementById('activityCatalogId').value='';if(document.getElementById('activityOrder'))document.getElementById('activityOrder').value='100'}
 document.getElementById('activityCatalogCancel')?.addEventListener('click',limpiarActividadAdmin);
@@ -595,7 +611,7 @@ activityCatalogForm?.addEventListener('submit',async e=>{
  const reglas={individual:[1,1],uno_mas:[1,null],min_dos:[2,null],uno_dos:[1,2]};
  const [min,max]=reglas[regla]||[1,1];
  try{
-  await rpc('admin_guardar_actividad_catalogo',{p_id:id,p_nombre:nombre,p_min_participantes:min,p_max_participantes:max,p_orden:orden});
+  await rpc('guardar_actividad_catalogo_sede_v1',{p_id:id,p_nombre:nombre,p_min_participantes:min,p_max_participantes:max,p_orden:orden});
   limpiarActividadAdmin();
   document.getElementById('activityAdminMessage').textContent='Actividad guardada correctamente.';
   await cargarCatalogoActividades();await Promise.all([cargarAdmin(),cargarTodo()]);
@@ -613,16 +629,16 @@ document.addEventListener('click',async e=>{
   return;
  }
  const tog=e.target.closest('[data-toggle-activity]');
- if(tog){try{await rpc('admin_cambiar_estado_actividad_catalogo',{p_id:tog.dataset.toggleActivity,p_activo:tog.dataset.newState==='true'});await cargarCatalogoActividades();await Promise.all([cargarAdmin(),cargarTodo()])}catch(err){document.getElementById('activityAdminMessage').textContent='No se pudo cambiar el estado: '+err.message}return}
+ if(tog){try{await rpc('cambiar_estado_actividad_sede_v1',{p_id:tog.dataset.toggleActivity,p_activo:tog.dataset.newState==='true'});await cargarCatalogoActividades();await Promise.all([cargarAdmin(),cargarTodo()])}catch(err){document.getElementById('activityAdminMessage').textContent='No se pudo cambiar el estado: '+err.message}return}
  const del=e.target.closest('[data-delete-activity]');
- if(del){if(!confirm('¿Eliminar definitivamente esta actividad? Si ya fue utilizada, el sistema no permitirá eliminarla y deberá desactivarla.'))return;try{await rpc('admin_eliminar_actividad_catalogo',{p_id:del.dataset.deleteActivity});await cargarCatalogoActividades();await Promise.all([cargarAdmin(),cargarTodo()]);document.getElementById('activityAdminMessage').textContent='Actividad eliminada.'}catch(err){const m=String(err.message||'');document.getElementById('activityAdminMessage').textContent=m.includes('ACTIVIDAD_EN_USO')?'Esta actividad ya tiene registros. Para conservar el historial, desactívela en lugar de eliminarla.':'No se pudo eliminar: '+m}return}
+ if(del){if(!confirm('¿Eliminar definitivamente esta actividad? Si ya fue utilizada, el sistema no permitirá eliminarla y deberá desactivarla.'))return;try{await rpc('eliminar_actividad_catalogo_sede_v1',{p_id:del.dataset.deleteActivity});await cargarCatalogoActividades();await Promise.all([cargarAdmin(),cargarTodo()]);document.getElementById('activityAdminMessage').textContent='Actividad eliminada.'}catch(err){const m=String(err.message||'');document.getElementById('activityAdminMessage').textContent=m.includes('ACTIVIDAD_EN_USO')?'Esta actividad ya tiene registros. Para conservar el historial, desactívela en lugar de eliminarla.':'No se pudo eliminar: '+m}return}
 });
 
 document.addEventListener('change',async e=>{
  const chk=e.target.closest('[data-close-permission]');
  if(!chk)return;
  try{
-  await rpc('admin_configurar_permiso_cierre',{p_user_id:chk.dataset.closePermission,p_permitido:chk.checked});
+  await rpc('configurar_permiso_cierre_sede_v1',{p_user_id:chk.dataset.closePermission,p_permitido:chk.checked});
   await cargarAdmin();
  }catch(err){alert('No se pudo actualizar el permiso: '+err.message);await cargarAdmin()}
 });
@@ -630,6 +646,47 @@ document.addEventListener('change',async e=>{
 
 
 
+
+
+// ===== USUARIOS Y ACCESOS POR SEDE v3.0 =====
+function limpiarUsuarioAcceso(){
+ const f=document.getElementById('userAccessForm');if(!f)return;f.reset();
+ document.getElementById('accessSede').value=SEDE_ACTUAL;
+ document.getElementById('accessRol').value='consulta';
+ document.getElementById('accessCierre').value='false';
+}
+document.getElementById('accessCancel')?.addEventListener('click',limpiarUsuarioAcceso);
+async function cargarUsuariosAcceso(){
+ if(!esMaestro)return;
+ const {data,error}=await supabase.rpc('listar_usuarios_sede_v1',{p_sede:SEDE_ACTUAL});
+ const body=document.getElementById('userAccessTable');if(!body)return;
+ if(error){body.innerHTML=`<tr><td colspan="7">${esc(error.message)}</td></tr>`;return}
+ body.innerHTML=(data||[]).map(u=>`<tr><td>${esc(u.email||'')}</td><td>${esc(u.nombre||'')}</td><td>${esc(u.sede)}</td><td>${esc(u.rol)}</td><td>${u.puede_cierre_dia?'Sí':'No'}</td><td>${u.activo?'Activo':'Inactivo'}</td><td><button class="light" data-edit-access='${JSON.stringify(u).replace(/'/g,"&#39;")}'>Editar</button> <button class="${u.activo?'danger':'ok'}" data-toggle-access="${u.user_id}" data-access-active="${!u.activo}">${u.activo?'Desactivar':'Activar'}</button></td></tr>`).join('');
+}
+document.getElementById('userAccessForm')?.addEventListener('submit',async e=>{
+ e.preventDefault();if(!esMaestro)return;
+ const msg=document.getElementById('userAccessMessage');
+ const body={action:'create_or_assign',email:document.getElementById('accessEmail').value.trim(),nombre:document.getElementById('accessNombre').value.trim(),password:document.getElementById('accessPassword').value,sede:document.getElementById('accessSede').value,rol:document.getElementById('accessRol').value,puede_cierre_dia:document.getElementById('accessCierre').value==='true'};
+ try{
+  msg.textContent='Procesando usuario...';
+  let data=null;
+  if(!body.password){
+   const r=await supabase.rpc('master_asignar_usuario_existente',{p_email:body.email,p_nombre:body.nombre||null,p_sede:body.sede,p_rol:body.rol,p_puede_cierre:body.puede_cierre_dia});
+   if(r.error)throw r.error;data={created:false};
+  }else{
+   const r=await supabase.functions.invoke('admin-users',{body});
+   if(r.error)throw r.error;if(r.data?.error)throw new Error(r.data.error);data=r.data;
+  }
+  msg.textContent=data?.created?'Usuario creado y asignado correctamente.':'Acceso actualizado correctamente.';
+  limpiarUsuarioAcceso();await cargarUsuariosAcceso();
+ }catch(err){msg.textContent='No se pudo crear/asignar: '+String(err.message||err)}
+});
+document.addEventListener('click',async e=>{
+ const edit=e.target.closest('[data-edit-access]');
+ if(edit){const u=JSON.parse(edit.dataset.editAccess);document.getElementById('accessEmail').value=u.email||'';document.getElementById('accessNombre').value=u.nombre||'';document.getElementById('accessSede').value=u.sede||SEDE_ACTUAL;document.getElementById('accessRol').value=u.rol||'consulta';document.getElementById('accessCierre').value=String(!!u.puede_cierre_dia);document.getElementById('accessPassword').value='';return}
+ const tog=e.target.closest('[data-toggle-access]');
+ if(tog&&esMaestro){try{await supabase.rpc('master_cambiar_estado_acceso',{p_user_id:tog.dataset.toggleAccess,p_sede:SEDE_ACTUAL,p_activo:tog.dataset.accessActive==='true'});await cargarUsuariosAcceso()}catch(err){alert('No se pudo cambiar el acceso: '+err.message)}}
+});
 
 // ===== CONTROL DE AUSENCIAS V2.6.5 =====
 const absenceForm=document.getElementById('absenceForm');
@@ -666,6 +723,7 @@ async function cargarAusenciasAdmin(){
  if(!esAdmin)return;
  const {data,error}=await supabase.from('ausencias_personal')
   .select('*')
+  .eq('sede',SEDE_ACTUAL)
   .order('fecha',{ascending:false})
   .order('created_at',{ascending:false})
   .limit(300);
@@ -723,7 +781,7 @@ absenceForm?.addEventListener('submit',async e=>{
  absenceStatus.textContent='Guardando ausencia en Supabase...';
 
  try{
-  await rpc('admin_guardar_ausencia_v3',{
+  await rpc('guardar_ausencia_sede_v1',{
    p_colaborador_id:colaboradorId,
    p_fecha:fecha,
    p_horas_ausencia:horas,
@@ -771,7 +829,7 @@ document.addEventListener('click',async e=>{
 
  btn.disabled=true;
  try{
-  await rpc('admin_eliminar_ausencia_v2',{p_id:btn.dataset.deleteAbsence});
+  await rpc('eliminar_ausencia_sede_v1',{p_id:btn.dataset.deleteAbsence});
   absenceStatus.textContent='Ausencia eliminada correctamente.';
   await cargarAusenciasAdmin();
   await actualizarDashboard();
@@ -836,6 +894,7 @@ async function abrirEditorRegistro(tipo,id){
 
   const {data:timer,error}=await supabase.from('cronometros')
     .select('colaborador_id,datos')
+    .eq('sede',SEDE_ACTUAL)
     .eq('id',r.timer_id)
     .maybeSingle();
   if(error){alert('No se pudieron obtener los participantes: '+error.message);return}
@@ -881,7 +940,7 @@ editForm.addEventListener('submit',async e=>{
 
  if(!confirm('¿Guardar esta corrección? La modificación quedará registrada en auditoría.'))return;
  try{
-  await rpc('admin_actualizar_registro_historial_v3',{
+  await rpc('actualizar_historial_sede_v1',{
    p_tipo:tipo,
    p_id:id,
    p_cambios:cambios,
@@ -1012,7 +1071,7 @@ document.addEventListener('click',async e=>{
  btn.textContent='Procesando...';
 
  try{
-  await rpc('admin_retirar_colaborador_actividad_v3',{
+  await rpc('retirar_colaborador_sede_v1',{
    p_cronometro_id:t.id,
    p_expected_version:Number(t.version),
    p_colaborador_id:colaboradorId,
@@ -1045,7 +1104,7 @@ async function eliminarRegistroHistorial(tipo,id){
  if(motivo.trim().length<5){alert('Debe escribir un motivo de al menos 5 caracteres.');return}
  if(!confirm(`¿Confirma que desea eliminar definitivamente este registro de ${etiqueta}?\n\nLa eliminación quedará registrada en la auditoría.`))return;
  try{
-  await rpc('admin_eliminar_registro_historial',{p_tipo:tipo,p_id:id,p_motivo:motivo.trim()});
+  await rpc('eliminar_historial_sede_v1',{p_tipo:tipo,p_id:id,p_motivo:motivo.trim()});
   await cargarTodo();
   alert('Registro eliminado correctamente.');
  }catch(err){
@@ -1064,22 +1123,23 @@ window.salir=async()=>{await cerrarSesion();location.replace('./index.html')};
 
 // ===== METAS, DASHBOARD, CIERRE Y AUDITORÍA =====
 async function cargarMetas(){
- const {data}=await supabase.from('metas_productividad').select('*').eq('activo',true).maybeSingle();
+ const {data}=await supabase.from('metas_productividad').select('*').eq('sede',SEDE_ACTUAL).eq('activo',true).maybeSingle();
  if(data)metasActuales=data;
  ['goalFacturasHora','goalLibrasHora','goalProductividad','goalActividadMin'].forEach(()=>{});
  const f=document.getElementById('goalFacturasHora'),l=document.getElementById('goalLibrasHora'),p=document.getElementById('goalProductividad'),a=document.getElementById('goalActividadMin');
  if(f)f.value=Number(metasActuales.facturas_hora||0);if(l)l.value=Number(metasActuales.libras_hora||0);if(p)p.value=Number(metasActuales.productividad_minima||80);if(a)a.value=Number(metasActuales.actividad_alerta_min||120);
  const mf=document.getElementById('metaFacturasHora'),ml=document.getElementById('metaLibrasHora');if(mf)mf.textContent=`Meta: ${Number(metasActuales.facturas_hora||0).toFixed(2)}`;if(ml)ml.textContent=`Meta: ${Number(metasActuales.libras_hora||0).toFixed(2)}`;
 }
-document.getElementById('metasForm')?.addEventListener('submit',async e=>{e.preventDefault();if(!esAdmin)return;try{await rpc('admin_guardar_metas_productividad',{p_facturas_hora:Number(document.getElementById('goalFacturasHora').value),p_libras_hora:Number(document.getElementById('goalLibrasHora').value),p_productividad_minima:Number(document.getElementById('goalProductividad').value),p_actividad_alerta_min:Number(document.getElementById('goalActividadMin').value)});document.getElementById('metasStatus').textContent='Metas actualizadas.';await cargarMetas();await actualizarDashboard()}catch(err){document.getElementById('metasStatus').textContent=err.message}});
+document.getElementById('metasForm')?.addEventListener('submit',async e=>{e.preventDefault();if(!esAdmin)return;try{await rpc('guardar_metas_sede_v1',{p_facturas_hora:Number(document.getElementById('goalFacturasHora').value),p_libras_hora:Number(document.getElementById('goalLibrasHora').value),p_productividad_minima:Number(document.getElementById('goalProductividad').value),p_actividad_alerta_min:Number(document.getElementById('goalActividadMin').value)});document.getElementById('metasStatus').textContent='Metas actualizadas.';await cargarMetas();await actualizarDashboard()}catch(err){document.getElementById('metasStatus').textContent=err.message}});
 
 async function obtenerParticipacionesPeriodo(desde,hasta){
- const {data,error}=await supabase.from('actividad_participaciones').select('*').gte('fecha',desde).lte('fecha',hasta).in('estado',['retirado','finalizado']).order('fecha');if(error)throw error;return data||[];
+ const {data,error}=await supabase.from('actividad_participaciones').select('*').eq('sede',SEDE_ACTUAL).gte('fecha',desde).lte('fecha',hasta).in('estado',['retirado','finalizado']).order('fecha');if(error)throw error;return data||[];
 }
 
 async function obtenerParticipacionesPreparacionPeriodo(desde,hasta){
  const {data,error}=await supabase.from('preparacion_participaciones')
   .select('*')
+  .eq('sede',SEDE_ACTUAL)
   .gte('fecha',desde)
   .lte('fecha',hasta)
   .in('estado',['finalizado'])
@@ -1107,15 +1167,15 @@ const dashDesde=document.getElementById('dashDesde'),dashHasta=document.getEleme
 
 async function cargarEstadoCierre(){
  const fecha=document.getElementById('cierreFecha')?.value||hoy();if(!fecha)return;
- const {data,error}=await supabase.from('cierres_diarios').select('fecha,estado,cerrado_por_email,cerrado_en,reabierto_por_email,reabierto_en').eq('fecha',fecha).maybeSingle();
+ const {data,error}=await supabase.from('cierres_diarios').select('fecha,estado,cerrado_por_email,cerrado_en,reabierto_por_email,reabierto_en').eq('sede',SEDE_ACTUAL).eq('fecha',fecha).maybeSingle();
  const el=document.getElementById('cierreStatus');if(!el)return;if(error){el.textContent=error.message;return}
  if(!data||data.estado==='abierto')el.textContent='Día ABIERTO. Se pueden iniciar procesos para esta fecha.';else el.textContent=`Día CERRADO${data.cerrado_por_email?' por '+data.cerrado_por_email:''}.`;
 }
 document.getElementById('cierreFecha')?.addEventListener('change',cargarEstadoCierre);
-document.getElementById('cerrarDiaBtn')?.addEventListener('click',async()=>{if(!puedeCierre)return alert('No tiene permiso para gestionar el cierre diario.');try{await rpc('gestionar_cierre_dia',{p_fecha:document.getElementById('cierreFecha').value,p_accion:'cerrar',p_observacion:document.getElementById('cierreObservacion').value.trim()||null});await cargarEstadoCierre()}catch(err){document.getElementById('cierreStatus').textContent=err.message}});
-document.getElementById('abrirDiaBtn')?.addEventListener('click',async()=>{if(!puedeCierre)return alert('No tiene permiso para gestionar el cierre diario.');const motivo=prompt('Motivo para reabrir el día:');if(motivo===null||motivo.trim().length<3)return;try{await rpc('gestionar_cierre_dia',{p_fecha:document.getElementById('cierreFecha').value,p_accion:'abrir',p_observacion:motivo.trim()});await cargarEstadoCierre()}catch(err){document.getElementById('cierreStatus').textContent=err.message}});
+document.getElementById('cerrarDiaBtn')?.addEventListener('click',async()=>{if(!puedeCierre)return alert('No tiene permiso para gestionar el cierre diario.');try{await rpc('gestionar_cierre_sede_v1',{p_fecha:document.getElementById('cierreFecha').value,p_accion:'cerrar',p_observacion:document.getElementById('cierreObservacion').value.trim()||null});await cargarEstadoCierre()}catch(err){document.getElementById('cierreStatus').textContent=err.message}});
+document.getElementById('abrirDiaBtn')?.addEventListener('click',async()=>{if(!puedeCierre)return alert('No tiene permiso para gestionar el cierre diario.');const motivo=prompt('Motivo para reabrir el día:');if(motivo===null||motivo.trim().length<3)return;try{await rpc('gestionar_cierre_sede_v1',{p_fecha:document.getElementById('cierreFecha').value,p_accion:'abrir',p_observacion:motivo.trim()});await cargarEstadoCierre()}catch(err){document.getElementById('cierreStatus').textContent=err.message}});
 
-async function cargarAuditoria(tipo='modificaciones'){if(!esAdmin)return;let tabla='auditoria_modificaciones',campo='modificado_en';if(tipo==='eliminaciones'){tabla='auditoria_eliminaciones';campo='eliminado_en'}if(tipo==='pausas'){tabla='pausas_cronometros';campo='pausado_en'}if(tipo==='cierres'){tabla='auditoria_cierres_dia';campo='created_at'}const {data,error}=await supabase.from(tabla).select('*').order(campo,{ascending:false}).limit(100);const body=document.getElementById('auditTable');if(!body)return;if(error){body.innerHTML=`<tr><td colspan="4">${esc(error.message)}</td></tr>`;return}body.innerHTML=(data||[]).map(r=>`<tr><td>${fechaHoraReporte(r[campo])}</td><td>${esc(tipo)}</td><td>${esc(r.motivo||r.observacion||r.accion||r.tipo_registro||'Registro')}</td><td>${esc(r.usuario_email||r.cerrado_por_email||r.pausado_por_email||r.eliminado_por_email||r.modificado_por_email||'')}</td></tr>`).join('')}
+async function cargarAuditoria(tipo='modificaciones'){if(!esAdmin)return;let tabla='auditoria_modificaciones',campo='modificado_en';if(tipo==='eliminaciones'){tabla='auditoria_eliminaciones';campo='eliminado_en'}if(tipo==='pausas'){tabla='pausas_cronometros';campo='pausado_en'}if(tipo==='cierres'){tabla='auditoria_cierres_dia';campo='created_at'}const {data,error}=await supabase.from(tabla).select('*').eq('sede',SEDE_ACTUAL).order(campo,{ascending:false}).limit(100);const body=document.getElementById('auditTable');if(!body)return;if(error){body.innerHTML=`<tr><td colspan="4">${esc(error.message)}</td></tr>`;return}body.innerHTML=(data||[]).map(r=>`<tr><td>${fechaHoraReporte(r[campo])}</td><td>${esc(tipo)}</td><td>${esc(r.motivo||r.observacion||r.accion||r.tipo_registro||'Registro')}</td><td>${esc(r.usuario_email||r.cerrado_por_email||r.pausado_por_email||r.eliminado_por_email||r.modificado_por_email||'')}</td></tr>`).join('')}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-audit-type]');if(!b)return;document.querySelectorAll('[data-audit-type]').forEach(x=>x.classList.remove('active'));b.classList.add('active');cargarAuditoria(b.dataset.auditType)});
 
 
@@ -1161,6 +1221,7 @@ function fechaSiguiente(fecha){const d=new Date(`${fecha}T00:00:00`);d.setDate(d
 async function obtenerAusenciasPeriodo(desde,hasta){
  const {data,error}=await supabase.from('ausencias_personal')
   .select('*')
+  .eq('sede',SEDE_ACTUAL)
   .gte('fecha',desde)
   .lte('fecha',hasta)
   .order('fecha',{ascending:true});
@@ -1170,12 +1231,13 @@ async function obtenerAusenciasPeriodo(desde,hasta){
 async function obtenerColaboradoresReporte(){
  const {data,error}=await supabase.from('colaboradores')
   .select('id,nombre,activo')
+  .eq('sede',SEDE_ACTUAL)
   .order('nombre');
  if(error)throw error;
  return data||[];
 }
 
-async function obtenerTodosRegistros(tabla,desde,hasta){const lote=1000;let inicio=0,todo=[];while(true){const {data,error}=await supabase.from(tabla).select('*').gte('created_at',`${desde}T00:00:00`).lt('created_at',fechaSiguiente(hasta)).order('created_at',{ascending:true}).range(inicio,inicio+lote-1);if(error)throw error;todo.push(...(data||[]));if(!data||data.length<lote)break;inicio+=lote}return todo}
+async function obtenerTodosRegistros(tabla,desde,hasta){const lote=1000;let inicio=0,todo=[];while(true){const {data,error}=await supabase.from(tabla).select('*').eq('sede',SEDE_ACTUAL).gte('created_at',`${desde}T00:00:00`).lt('created_at',fechaSiguiente(hasta)).order('created_at',{ascending:true}).range(inicio,inicio+lote-1);if(error)throw error;todo.push(...(data||[]));if(!data||data.length<lote)break;inicio+=lote}return todo}
 function participantesActividad(registro){if(Array.isArray(registro.participantes)&&registro.participantes.length)return registro.participantes.filter(Boolean);return String(registro.empleado||'').split(',').map(x=>x.trim()).filter(Boolean)}
 function descargarBlob(blob,nombre){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=nombre;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500)}
 async function archivoABase64(url){try{const r=await fetch(url);const b=await r.blob();return await new Promise((ok,no)=>{const fr=new FileReader();fr.onload=()=>ok(String(fr.result).split(',')[1]);fr.onerror=no;fr.readAsDataURL(b)})}catch{return null}}
@@ -1271,7 +1333,7 @@ async function construirReporte(preparaciones,actividades,ausencias,colaboradore
  dash.columns=Array.from({length:14},()=>({width:12}));
  dash.getRow(1).height=38;
  dash.mergeCells('A1:N2');
- dash.getCell('A1').value='BIA HONDURAS · DASHBOARD DE PRODUCTIVIDAD';
+ dash.getCell('A1').value=`BIA HONDURAS · ${SEDE_ACTUAL} · DASHBOARD DE PRODUCTIVIDAD`;
  dash.getCell('A1').fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF061D3B'}};
  dash.getCell('A1').font={bold:true,size:22,color:{argb:'FFFFFFFF'}};
  dash.getCell('A1').alignment={vertical:'middle',horizontal:'center'};
@@ -1400,7 +1462,7 @@ async function construirReporte(preparaciones,actividades,ausencias,colaboradore
  return wb;
 }
 
-descargarExcelBtn.addEventListener('click',async()=>{const desde=reporteDesde.value,hasta=reporteHasta.value;if(!desde||!hasta)return alert('Seleccione la fecha inicial y final.');if(desde>hasta)return alert('La fecha inicial no puede ser mayor que la fecha final.');if(!navigator.onLine)return alert('Se necesita conexión para consultar la información de Supabase.');if(typeof ExcelJS==='undefined')return alert('No se pudo cargar el generador de Excel. Revise la conexión.');const original=descargarExcelBtn.textContent;descargarExcelBtn.disabled=true;descargarExcelBtn.textContent='Generando dashboard...';reporteMensaje.textContent='Consultando información y construyendo gráficos ejecutivos...';try{const [p,a,ausencias,colsReporte,participaciones,participacionesPrep]=await Promise.all([obtenerTodosRegistros('historial_preparaciones',desde,hasta),obtenerTodosRegistros('historial_actividades',desde,hasta),obtenerAusenciasPeriodo(desde,hasta),obtenerColaboradoresReporte(),obtenerParticipacionesPeriodo(desde,hasta),obtenerParticipacionesPreparacionPeriodo(desde,hasta)]);if(!p.length&&!a.length&&!ausencias.length){reporteMensaje.textContent='No se encontraron registros ni ausencias en el período seleccionado.';return}const libro=await construirReporte(p,a,ausencias,colsReporte,participaciones,desde,hasta),buffer=await libro.xlsx.writeBuffer();descargarBlob(new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),`Dashboard_Productividad_BIA_${desde}_al_${hasta}.xlsx`);reporteMensaje.textContent=`Dashboard generado con ${p.length} preparaciones, ${a.length} actividades y ${ausencias.length} registros de ausencia.`}catch(err){console.error(err);reporteMensaje.textContent='No se pudo generar el reporte: '+err.message}finally{descargarExcelBtn.disabled=false;descargarExcelBtn.textContent=original}});
+descargarExcelBtn.addEventListener('click',async()=>{const desde=reporteDesde.value,hasta=reporteHasta.value;if(!desde||!hasta)return alert('Seleccione la fecha inicial y final.');if(desde>hasta)return alert('La fecha inicial no puede ser mayor que la fecha final.');if(!navigator.onLine)return alert('Se necesita conexión para consultar la información de Supabase.');if(typeof ExcelJS==='undefined')return alert('No se pudo cargar el generador de Excel. Revise la conexión.');const original=descargarExcelBtn.textContent;descargarExcelBtn.disabled=true;descargarExcelBtn.textContent='Generando dashboard...';reporteMensaje.textContent='Consultando información y construyendo gráficos ejecutivos...';try{const [p,a,ausencias,colsReporte,participaciones,participacionesPrep]=await Promise.all([obtenerTodosRegistros('historial_preparaciones',desde,hasta),obtenerTodosRegistros('historial_actividades',desde,hasta),obtenerAusenciasPeriodo(desde,hasta),obtenerColaboradoresReporte(),obtenerParticipacionesPeriodo(desde,hasta),obtenerParticipacionesPreparacionPeriodo(desde,hasta)]);if(!p.length&&!a.length&&!ausencias.length){reporteMensaje.textContent='No se encontraron registros ni ausencias en el período seleccionado.';return}const libro=await construirReporte(p,a,ausencias,colsReporte,participaciones,desde,hasta),buffer=await libro.xlsx.writeBuffer();descargarBlob(new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),`Dashboard_Productividad_BIA_${SEDE_ACTUAL}_${desde}_al_${hasta}.xlsx`);reporteMensaje.textContent=`Dashboard generado con ${p.length} preparaciones, ${a.length} actividades y ${ausencias.length} registros de ausencia.`}catch(err){console.error(err);reporteMensaje.textContent='No se pudo generar el reporte: '+err.message}finally{descargarExcelBtn.disabled=false;descargarExcelBtn.textContent=original}});
 
-supabase.channel('cronometros-operacion-v295').on('postgres_changes',{event:'*',schema:'public',table:'cronometros'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'historial_preparaciones'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'historial_actividades'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'colaboradores'},()=>{cargarTodo();if(esAdmin)cargarAdmin()}).on('postgres_changes',{event:'*',schema:'public',table:'actividades_catalogo'},()=>{cargarCatalogoActividades().then(()=>cargarTodo());if(esAdmin)cargarAdmin()}).on('postgres_changes',{event:'*',schema:'public',table:'ausencias_personal'},()=>{if(esAdmin)cargarAusenciasAdmin();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'metas_productividad'},()=>{cargarMetas();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'pausas_cronometros'},()=>{if(esAdmin)cargarAuditoria('pausas')}).on('postgres_changes',{event:'*',schema:'public',table:'cierres_diarios'},()=>{cargarEstadoCierre();if(esAdmin)cargarAuditoria('cierres')}).on('postgres_changes',{event:'*',schema:'public',table:'actividad_participaciones'},()=>{cargarTodo();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'preparacion_participaciones'},()=>{cargarTodo();actualizarDashboard()}).subscribe();
+supabase.channel('cronometros-operacion-v300').on('postgres_changes',{event:'*',schema:'public',table:'cronometros'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'historial_preparaciones'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'historial_actividades'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'colaboradores'},()=>{cargarTodo();if(esAdmin)cargarAdmin()}).on('postgres_changes',{event:'*',schema:'public',table:'actividades_catalogo'},()=>{cargarCatalogoActividades().then(()=>cargarTodo());if(esAdmin)cargarAdmin()}).on('postgres_changes',{event:'*',schema:'public',table:'ausencias_personal'},()=>{if(esAdmin)cargarAusenciasAdmin();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'metas_productividad'},()=>{cargarMetas();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'pausas_cronometros'},()=>{if(esAdmin)cargarAuditoria('pausas')}).on('postgres_changes',{event:'*',schema:'public',table:'cierres_diarios'},()=>{cargarEstadoCierre();if(esAdmin)cargarAuditoria('cierres')}).on('postgres_changes',{event:'*',schema:'public',table:'actividad_participaciones'},()=>{cargarTodo();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'preparacion_participaciones'},()=>{cargarTodo();actualizarDashboard()}).subscribe();
 try{await cargarMetas();await cargarTodo();await actualizarDashboard();if(esAdmin)await cargarAuditoria()}catch(e){document.getElementById('conexion').textContent='No se pudo cargar la información: '+e.message}

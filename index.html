@@ -128,10 +128,11 @@ input{
     </section>
   </main>
   <script type="module">
-    import { iniciarSesion, obtenerSesion } from './supabase-config.js';
-    const actual=await obtenerSesion(); if(actual.ok&&actual.session) location.replace('./cronometros.html');
+    import { iniciarSesion, obtenerSesion, supabase } from './supabase-config.js';
+    async function irPrimeraSede(){try{const {data}=await supabase.rpc('obtener_sedes_usuario');const sedes=Array.isArray(data)?data:[];const s=sedes.includes('SPS')?'SPS':sedes[0];location.replace(s==='CBA'?'./cba.html':s==='SRC'?'./src.html':'./cronometros.html')}catch(e){location.replace('./cronometros.html')}}
+const actual=await obtenerSesion(); if(actual.ok&&actual.session) await irPrimeraSede();
     const form=document.getElementById('loginForm'),msg=document.getElementById('mensaje'),btn=document.getElementById('btnLogin');
-    form.addEventListener('submit',async e=>{e.preventDefault();msg.textContent='';btn.disabled=true;btn.textContent='Validando…';const result=await iniciarSesion(document.getElementById('email').value.trim(),document.getElementById('password').value);btn.disabled=false;btn.textContent='Ingresar al sistema';if(!result.ok){msg.className='msg error';msg.textContent='Usuario o contraseña incorrectos.';return}msg.className='msg ok';msg.textContent='Acceso correcto.';location.replace('./cronometros.html')});
+    form.addEventListener('submit',async e=>{e.preventDefault();msg.textContent='';btn.disabled=true;btn.textContent='Validando…';const result=await iniciarSesion(document.getElementById('email').value.trim(),document.getElementById('password').value);btn.disabled=false;btn.textContent='Ingresar al sistema';if(!result.ok){msg.className='msg error';msg.textContent='Usuario o contraseña incorrectos.';return}msg.className='msg ok';msg.textContent='Acceso correcto.';await irPrimeraSede()});
   </script>
   <script src="./pwa.js" defer></script>
 </body>

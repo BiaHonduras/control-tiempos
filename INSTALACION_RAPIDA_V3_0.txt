@@ -1,0 +1,16 @@
+INSTALACIÓN RÁPIDA v3.0
+
+1) Supabase SQL Editor:
+   Ejecutar actualizacion_v3_0_sedes_usuarios.sql
+
+2) Edge Function (solo necesaria para CREAR usuarios nuevos):
+   supabase functions deploy admin-users
+
+3) Subir todos los archivos web del paquete.
+
+4) Ctrl + F5.
+
+5) Probar con javierh@biabrands.co:
+   SPS / CBA / SRC deben aparecer en la cabecera.
+
+6) Crear un colaborador diferente en CBA y otro en SRC para comprobar separación.

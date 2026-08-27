@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Control de Tiempos · Principal · BIA</title>
+<title>Control de Tiempos · SPS · BIA</title>
 <style>
 :root{--bg:#f3f6fb;--card:#fff;--navy:#17305c;--navy2:#23467d;--blue:#4387f5;--blue-soft:#eaf2ff;--ok:#15966c;--warn:#e89b18;--danger:#c64237;--text:#182230;--muted:#667085;--border:#dfe7f1;--shadow:0 10px 30px rgba(23,48,92,.08)}
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-gradient(180deg,#edf3fb 0,#f8fafc 230px);color:var(--text)}
@@ -1405,7 +1405,7 @@ body{
 @media(max-width:600px){.activity-catalog-form{grid-template-columns:1fr!important}.activity-admin-section .table{overflow-x:auto}}
 
 
-/* ===== ÁREAS / PÁGINAS BIA v2.9.6 ===== */
+/* ===== ÁREAS / PÁGINAS BIA v3.0.0 ===== */
 .area-switcher{
   display:flex;align-items:center;gap:5px;margin-right:8px;padding-right:10px;
   border-right:1px solid rgba(255,255,255,.13)
@@ -1430,6 +1430,13 @@ body{
  .area-switcher a{flex:1;min-width:64px}
 }
 
+
+.master-only-section{border-top:1px solid var(--border);padding-top:4px;margin-top:18px}
+.user-access-form{grid-template-columns:repeat(3,minmax(170px,1fr))!important}
+.site-access-denied{padding:28px;text-align:center;border:1px solid #f0c2bd;background:#fff7f6;border-radius:16px;color:#8e2d27;margin:18px 0}
+.site-access-denied h2{margin:0 0 8px;color:#84241f}
+@media(max-width:850px){.user-access-form{grid-template-columns:1fr!important}}
+
 </style>
 
   <link rel="manifest" href="./manifest.webmanifest">
@@ -1439,14 +1446,14 @@ body{
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
 </head>
-<body>
+<body data-sede="SPS">
 <header class="app-header">
   <div class="brand-wrap">
     <img class="header-logo" src="./assets/bia-honduras-logo.png" alt="BIA Honduras">
-    <div class="brand-copy"><div class="brand-eyebrow">BIA HONDURAS · OPERACIONES</div><h1>Control de Tiempos · Principal</h1><div>Productividad, preparación y actividades en tiempo real</div><span class="page-area-badge">Área Principal</span></div>
+    <div class="brand-copy"><div class="brand-eyebrow">BIA HONDURAS · OPERACIONES</div><h1>Control de Tiempos · SPS</h1><div>Productividad, preparación y actividades en tiempo real</div><span class="page-area-badge">Sede SPS</span></div>
   </div>
   <div class="user"><nav class="area-switcher" aria-label="Páginas operativas">
-  <a data-area-link="principal" class="current-area" href="./cronometros.html">Principal</a>
+  <a data-area-link="sps" class="current-area" href="./cronometros.html">SPS</a>
   <a data-area-link="cba" href="./cba.html">CBA</a>
   <a data-area-link="src" href="./src.html">SRC</a>
 </nav><span id="networkStatus" class="network"></span><span id="userAvatar" class="user-avatar">BI</span><button id="installApp" class="install-btn" hidden>Instalar app</button><span id="roleBadge" class="role-badge">Verificando rol…</span><span id="userEmail" class="user-email"></span><button id="adminOpenBtn" class="light" type="button" hidden>Administración</button><button onclick="window.salir()">Cerrar sesión</button></div>
@@ -1473,7 +1480,7 @@ body{
   
   <section id="adminPanel" class="card" hidden>
     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-      <div><h2 style="margin-bottom:4px">Administración</h2><div class="note">Gestione colaboradores, actividades y permisos operativos desde un solo lugar.</div></div>
+      <div><h2 style="margin-bottom:4px">Administración</h2><div class="note">Gestione colaboradores, actividades y permisos de la sede SPS.</div></div>
       <button id="adminCloseBtn" class="light" type="button">Cerrar panel</button>
     </div>
     <form id="collabForm" class="admin-form">
@@ -1499,6 +1506,24 @@ body{
       <div id="activityAdminMessage" class="note" style="margin:10px 0"></div>
       <div class="table"><table><thead><tr><th>Actividad</th><th>Participantes</th><th>Orden</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="activityCatalogTable"></tbody></table></div>
     </div>
+    <div id="userAccessAdminSection" class="admin-subsection master-only-section" hidden>
+      <div class="section-head" style="margin-top:22px">
+        <div><h3>Usuarios y accesos</h3><div class="note">Usuario maestro: cree cuentas y asigne acceso independiente a SPS, CBA o SRC.</div></div>
+        <span class="badge">Maestro</span>
+      </div>
+      <form id="userAccessForm" class="admin-form user-access-form">
+        <div><label>Correo</label><input id="accessEmail" type="email" required placeholder="usuario@biabrands.co"></div>
+        <div><label>Nombre</label><input id="accessNombre" maxlength="120" placeholder="Nombre del usuario"></div>
+        <div><label>Contraseña temporal</label><input id="accessPassword" type="password" minlength="8" placeholder="Solo necesaria para usuario nuevo"></div>
+        <div><label>Sede</label><select id="accessSede"><option value="SPS">SPS</option><option value="CBA">CBA</option><option value="SRC">SRC</option></select></div>
+        <div><label>Rol</label><select id="accessRol"><option value="consulta">Solo consulta</option><option value="admin">Administrador</option></select></div>
+        <div><label>Permiso cierre</label><select id="accessCierre"><option value="false">No</option><option value="true">Sí</option></select></div>
+        <div class="admin-form-actions"><button class="primary" type="submit">Crear / asignar usuario</button><button id="accessCancel" class="light" type="button">Limpiar</button></div>
+      </form>
+      <div id="userAccessMessage" class="note" style="margin:10px 0"></div>
+      <div class="table"><table><thead><tr><th>Correo</th><th>Nombre</th><th>Sede</th><th>Rol</th><th>Cierre</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="userAccessTable"></tbody></table></div>
+    </div>
+
   </section>
   
 <section class="card" id="dashboardApp">
@@ -1777,7 +1802,7 @@ body{
   </section>
 </div>
 
-<footer class="app-footer"><img src="./assets/bia-honduras-logo.png" alt="BIA Honduras"> Control de Tiempos · PWA v2.9.6</footer>
+<footer class="app-footer"><img src="./assets/bia-honduras-logo.png" alt="BIA Honduras"> Control de Tiempos · PWA v3.0.0</footer>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <script type="module" src="./cronometros.js"></script>
 <script src="./pwa.js" defer></script>
