@@ -31,33 +31,53 @@ function horasProgramadasPeriodo(desde,hasta){
  return diasEntre(desde,hasta).reduce((s,f)=>s+horasJornadaFecha(f),0);
 }
 
-const actividades=[
-'Aseo Almacén',
-'Aseo Andén | Botar Basura',
-'Aseo Parqueo',
-'Carga de Contenedores',
-'Carga de Camiones',
-'Descarga de Contenedores',
-'Descarga de Camiones',
-'Despacho Rutas Detalle',
-'Limpieza del Montacargas',
-'Orden Área Asignada',
-'Orden Bodega 033 | 095',
-'Preparación de Facturas',
-'Preparación de La Colonia',
-'Preparación de Walmart',
-'Flejado de Walmart y La Colonia',
-'Recoger Tarimas Vacías | Fleje | B033 - B095',
-'Preparación de Rutas de Detalle',
-'Toma de Inventario'
+let actividades=[
+'Aseo Almacén','Aseo Andén | Botar Basura','Aseo Parqueo','Carga de Contenedores','Carga de Camiones',
+'Descarga de Contenedores','Descarga de Camiones','Despacho Rutas Detalle','Limpieza del Montacargas',
+'Orden Área Asignada','Orden Bodega 033 | 095','Preparación de Facturas','Preparación de La Colonia',
+'Preparación de Walmart','Flejado de Walmart y La Colonia','Recoger Tarimas Vacías | Fleje | B033 - B095',
+'Preparación de Rutas de Detalle','Toma de Inventario'
 ];
+let actividadesCatalogo=new Map();
+let actividadesMultiples=new Set(['Preparación de Walmart','Preparación de La Colonia','Carga de Contenedores','Descarga de Contenedores','Flejado de Walmart y La Colonia']);
+let actividadesMinimoDos=new Set(['Preparación de Walmart','Preparación de La Colonia']);
+let actividadesMaximoDos=new Set(['Flejado de Walmart y La Colonia']);
 const tipos=['Café','Representada','Mixto'];
-// Actividades que permiten seleccionar varios colaboradores.
-const actividadesMultiples=new Set(['Preparación de Walmart','Preparación de La Colonia','Carga de Contenedores','Descarga de Contenedores','Flejado de Walmart y La Colonia']);
-// Solo estas continúan requiriendo mínimo dos participantes.
-const actividadesMinimoDos=new Set(['Preparación de Walmart','Preparación de La Colonia']);
-// Esta actividad permite 1 o 2 personas, pero no más.
-const actividadesMaximoDos=new Set(['Flejado de Walmart y La Colonia']);
+
+function aplicarCatalogoActividades(rows){
+ if(!Array.isArray(rows)||!rows.length)return;
+ actividadesCatalogo=new Map(rows.map(r=>[r.nombre,r]));
+ actividades=rows.filter(r=>r.activo!==false).sort((a,b)=>(Number(a.orden||100)-Number(b.orden||100))||a.nombre.localeCompare(b.nombre,'es')).map(r=>r.nombre);
+ actividadesMultiples=new Set(rows.filter(r=>r.activo!==false && !(Number(r.min_participantes||1)===1 && Number(r.max_participantes||1)===1)).map(r=>r.nombre));
+ actividadesMinimoDos=new Set(rows.filter(r=>r.activo!==false && Number(r.min_participantes||1)>=2).map(r=>r.nombre));
+ actividadesMaximoDos=new Set(rows.filter(r=>r.activo!==false && Number(r.max_participantes||0)===2).map(r=>r.nombre));
+}
+function configActividad(nombre){
+ return actividadesCatalogo.get(nombre)||{nombre,min_participantes:actividadesMinimoDos.has(nombre)?2:1,max_participantes:actividadesMaximoDos.has(nombre)?2:(actividadesMultiples.has(nombre)?null:1),activo:true};
+}
+function reglaActividadTexto(nombre){
+ const c=configActividad(nombre),min=Number(c.min_participantes||1),max=c.max_participantes==null?null:Number(c.max_participantes);
+ if(min===1&&max===1)return 'Seleccione un colaborador.';
+ if(min===1&&max===2)return 'Seleccione uno o dos colaboradores para esta actividad.';
+ if(min===1&&max==null)return 'Seleccione uno o más colaboradores para esta actividad.';
+ if(min===2&&max==null)return 'Seleccione dos o más colaboradores para esta actividad.';
+ if(max!=null&&min===max)return `Seleccione exactamente ${min} colaboradores.`;
+ return max==null?`Seleccione al menos ${min} colaboradores.`:`Seleccione entre ${min} y ${max} colaboradores.`;
+}
+function validarCantidadParticipantesActividad(nombre,cantidad){
+ const c=configActividad(nombre),min=Number(c.min_participantes||1),max=c.max_participantes==null?null:Number(c.max_participantes);
+ if(cantidad<min)throw new Error(min===1?'Seleccione al menos un colaborador.':`Seleccione al menos ${min} colaboradores para esta actividad.`);
+ if(max!=null&&cantidad>max)throw new Error(max===1?'Seleccione un solo colaborador.':`Seleccione como máximo ${max} colaboradores para esta actividad.`);
+}
+async function cargarCatalogoActividades(){
+ try{
+  const {data,error}=await supabase.from('actividades_catalogo').select('*').order('orden').order('nombre');
+  if(error)throw error;
+  if(data?.length)aplicarCatalogoActividades(data);
+ }catch(e){
+  console.warn('Catálogo de actividades no disponible; usando lista local.',e?.message||e);
+ }
+}
 const timers=new Map();
 
 const slug=s=>String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\W+/g,'-').toLowerCase();
@@ -185,10 +205,10 @@ function limpiarFormularioPreparacion(){
  actualizarDisponibilidadColaboradores();
 }
 
-function actividadEsCompartida(){return actividadesMultiples.has(document.getElementById('act-tipo')?.value||'')}
+function actividadEsCompartida(){const n=document.getElementById('act-tipo')?.value||'';const c=configActividad(n);return !!n&&!(Number(c.min_participantes||1)===1&&Number(c.max_participantes||1)===1)}
 function idsActividadSeleccionados(){return actividadEsCompartida()?[...document.querySelectorAll('input[name="act-participante"]:checked')].map(x=>x.value):[document.getElementById('act-colaborador')?.value||''].filter(Boolean)}
 function idSeleccionado(cat){return cat==='preparacion'?(idsPreparacionSeleccionados()[0]||''):(idsActividadSeleccionados()[0]||document.getElementById('act-colaborador')?.value||'')}
-function actualizarModoActividad(refrescar=true){const actividad=document.getElementById('act-tipo')?.value||'';const multiple=actividadesMultiples.has(actividad);const sw=document.getElementById('act-shared-wrap'),one=document.getElementById('act-single-wrap'),hint=document.getElementById('act-participant-hint');if(sw)sw.style.display=multiple?'block':'none';if(one)one.style.display=multiple?'none':'block';if(hint)hint.textContent=actividadesMinimoDos.has(actividad)?'Seleccione dos o más colaboradores para esta actividad.':actividadesMaximoDos.has(actividad)?'Seleccione uno o dos colaboradores para esta actividad.':'Seleccione uno o más colaboradores para esta actividad.';if(refrescar)actualizarFormularioSeleccionado('actividad')}
+function actualizarModoActividad(refrescar=true){const actividad=document.getElementById('act-tipo')?.value||'';const c=configActividad(actividad);const multiple=actividad&&!(Number(c.min_participantes||1)===1&&Number(c.max_participantes||1)===1);const sw=document.getElementById('act-shared-wrap'),one=document.getElementById('act-single-wrap'),hint=document.getElementById('act-participant-hint');if(sw)sw.style.display=multiple?'block':'none';if(one)one.style.display=multiple?'none':'block';if(hint)hint.textContent=reglaActividadTexto(actividad);if(refrescar)actualizarFormularioSeleccionado('actividad')}
 function actualizarFormularioSeleccionado(cat){
  const pref=cat==='preparacion'?'prep':'act';
  const ids=cat==='preparacion'?idsPreparacionSeleccionados():idsActividadSeleccionados();
@@ -319,10 +339,7 @@ function datosFormulario(cat){
  const nombres=ids.map(id=>colaboradores.find(c=>c.id===id)?.nombre).filter(Boolean);
  const d={fecha:document.getElementById('act-fecha').value,actividad,participantes_ids:ids,participantes_nombres:nombres};
  if(!d.fecha||!d.actividad)throw new Error('Seleccione fecha y actividad.');
- if(actividadesMinimoDos.has(actividad)&&ids.length<2)throw new Error('Seleccione al menos dos colaboradores para esta actividad.');
- if(actividadesMaximoDos.has(actividad)&&(ids.length<1||ids.length>2))throw new Error('Seleccione uno o dos colaboradores para esta actividad.');
- if(actividadesMultiples.has(actividad)&&!actividadesMinimoDos.has(actividad)&&!actividadesMaximoDos.has(actividad)&&ids.length<1)throw new Error('Seleccione al menos un colaborador.');
- if(!actividadesMultiples.has(actividad)&&ids.length!==1)throw new Error('Seleccione un colaborador.');
+ validarCantidadParticipantesActividad(actividad,ids.length);
  return d;
 }
 function mostrarConflicto(cat,msg){const el=document.getElementById(`conflict-${cat==='preparacion'?'prep':'act'}`);if(!el)return;el.textContent=msg;el.style.display='block';setTimeout(()=>el.style.display='none',6000)}
@@ -335,7 +352,7 @@ async function iniciar(cat){
  if(!navigator.onLine)return mostrarConflicto(cat,'Sin conexión. La operación debe validarse en Supabase.');
  try{
   if(cat==='actividad'){
-   await rpc('iniciar_actividad_v8',{p_colaborador_ids:ids,p_datos:datos});
+   await rpc('iniciar_actividad_v9',{p_colaborador_ids:ids,p_datos:datos});
   }else{
    await rpc('iniciar_preparacion_v7',{p_colaborador_ids:ids,p_datos:datos});
   }
@@ -463,6 +480,7 @@ function actualizarResumenDia(prep=[],acts=[],activos=[]){
 }
 
 async function cargarTodo(){
+ await cargarCatalogoActividades();
  const estadoUI=capturarEstadoFormularios();
  const [
   {data:cols,error:ec},
@@ -550,18 +568,56 @@ async function verificarAdmin(userId){
 }
 async function cargarAdmin(){
  if(!esAdmin)return;
- const [{data,error},{data:usuarios,error:eu}]=await Promise.all([
+ const [{data,error},{data:usuarios,error:eu},{data:acts,error:ea}]=await Promise.all([
   supabase.from('colaboradores').select('*').order('activo',{ascending:false}).order('orden').order('nombre'),
-  supabase.rpc('admin_listar_usuarios_cierre')
+  supabase.rpc('admin_listar_usuarios_cierre'),
+  supabase.from('actividades_catalogo').select('*').order('activo',{ascending:false}).order('orden').order('nombre')
  ]);
- if(error||eu)throw error||eu;
+ if(error||eu||ea)throw error||eu||ea;
  document.getElementById('collabTable').innerHTML=(data||[]).map(c=>`<tr><td>${esc(c.nombre)}</td><td>${esc(c.codigo||'')}</td><td><span class="${c.activo?'status-active':'status-inactive'}">${c.activo?'Activo':'Inactivo'}</span></td><td><button class="light" data-edit-collab='${JSON.stringify({id:c.id,nombre:c.nombre,codigo:c.codigo||''}).replace(/'/g,"&#39;")}'>Editar</button> <button class="${c.activo?'danger':'ok'}" data-toggle-collab="${c.id}" data-new-state="${!c.activo}">${c.activo?'Desactivar':'Activar'}</button></td></tr>`).join('');
  const pt=document.getElementById('closePermissionTable');
  if(pt)pt.innerHTML=(usuarios||[]).map(u=>`<tr><td>${esc(u.email||'')}</td><td>${esc(u.nombre||'')}</td><td>${esc(u.rol||'operador')}</td><td><label class="permission-switch"><input type="checkbox" data-close-permission="${u.id}" ${u.puede_cierre_dia?'checked':''} ${u.rol==='admin'?'checked disabled':''}><span>${u.rol==='admin'?'Incluido por rol':u.puede_cierre_dia?'Autorizado':'Sin permiso'}</span></label></td></tr>`).join('');
+ const at=document.getElementById('activityCatalogTable');
+ if(at)at.innerHTML=(acts||[]).map(a=>{const max=a.max_participantes==null?'Sin límite':a.max_participantes;const regla=a.min_participantes===1&&a.max_participantes===1?'1 persona':a.min_participantes===1&&a.max_participantes===2?'1 a 2':a.min_participantes===1&&a.max_participantes==null?'1 o más':a.min_participantes===2&&a.max_participantes==null?'Mínimo 2':`${a.min_participantes} a ${max}`;return `<tr><td>${esc(a.nombre)}</td><td>${esc(regla)}</td><td>${Number(a.orden||100)}</td><td><span class="${a.activo?'status-active':'status-inactive'}">${a.activo?'Activa':'Inactiva'}</span></td><td><button class="light" data-edit-activity='${JSON.stringify({id:a.id,nombre:a.nombre,min:a.min_participantes,max:a.max_participantes,orden:a.orden||100}).replace(/'/g,"&#39;")}'>Editar</button> <button class="${a.activo?'danger':'ok'}" data-toggle-activity="${a.id}" data-new-state="${!a.activo}">${a.activo?'Desactivar':'Activar'}</button> <button class="danger" data-delete-activity="${a.id}">Eliminar</button></td></tr>`}).join('');
 }
 const panel=document.getElementById('adminPanel');document.getElementById('adminOpenBtn').addEventListener('click',async()=>{panel.hidden=false;await cargarAdmin();panel.scrollIntoView({behavior:'smooth'})});document.getElementById('adminCloseBtn').addEventListener('click',()=>panel.hidden=true);document.getElementById('collabCancelEdit').addEventListener('click',()=>document.getElementById('collabForm').reset());
 document.getElementById('collabForm').addEventListener('submit',async e=>{e.preventDefault();const id=document.getElementById('collabId').value||null,nombre=document.getElementById('collabNombre').value.trim(),codigo=document.getElementById('collabCodigo').value.trim()||null;try{await rpc('admin_guardar_colaborador',{p_id:id,p_nombre:nombre,p_codigo:codigo});e.target.reset();document.getElementById('collabId').value='';await Promise.all([cargarAdmin(),cargarTodo()]);document.getElementById('adminMessage').textContent='Colaborador guardado correctamente.'}catch(err){document.getElementById('adminMessage').textContent=err.message}});
 document.addEventListener('click',async e=>{const edit=e.target.closest('[data-edit-collab]');if(edit){const c=JSON.parse(edit.dataset.editCollab);document.getElementById('collabId').value=c.id;document.getElementById('collabNombre').value=c.nombre;document.getElementById('collabCodigo').value=c.codigo;return}const tog=e.target.closest('[data-toggle-collab]');if(tog){try{await rpc('admin_cambiar_estado_colaborador',{p_id:tog.dataset.toggleCollab,p_activo:tog.dataset.newState==='true'});await Promise.all([cargarAdmin(),cargarTodo()])}catch(err){document.getElementById('adminMessage').textContent=err.message}}});
+const activityCatalogForm=document.getElementById('activityCatalogForm');
+function limpiarActividadAdmin(){activityCatalogForm?.reset();if(document.getElementById('activityCatalogId'))document.getElementById('activityCatalogId').value='';if(document.getElementById('activityOrder'))document.getElementById('activityOrder').value='100'}
+document.getElementById('activityCatalogCancel')?.addEventListener('click',limpiarActividadAdmin);
+activityCatalogForm?.addEventListener('submit',async e=>{
+ e.preventDefault();
+ const id=document.getElementById('activityCatalogId').value||null;
+ const nombre=document.getElementById('activityName').value.trim();
+ const regla=document.getElementById('activityRule').value;
+ const orden=Number(document.getElementById('activityOrder').value||100);
+ const reglas={individual:[1,1],uno_mas:[1,null],min_dos:[2,null],uno_dos:[1,2]};
+ const [min,max]=reglas[regla]||[1,1];
+ try{
+  await rpc('admin_guardar_actividad_catalogo',{p_id:id,p_nombre:nombre,p_min_participantes:min,p_max_participantes:max,p_orden:orden});
+  limpiarActividadAdmin();
+  document.getElementById('activityAdminMessage').textContent='Actividad guardada correctamente.';
+  await cargarCatalogoActividades();await Promise.all([cargarAdmin(),cargarTodo()]);
+ }catch(err){document.getElementById('activityAdminMessage').textContent='No se pudo guardar: '+err.message}
+});
+document.addEventListener('click',async e=>{
+ const edit=e.target.closest('[data-edit-activity]');
+ if(edit){
+  const a=JSON.parse(edit.dataset.editActivity);
+  document.getElementById('activityCatalogId').value=a.id;
+  document.getElementById('activityName').value=a.nombre;
+  document.getElementById('activityOrder').value=a.orden||100;
+  document.getElementById('activityRule').value=a.min===1&&a.max===1?'individual':a.min===1&&a.max===2?'uno_dos':a.min===1&&a.max==null?'uno_mas':a.min===2&&a.max==null?'min_dos':'individual';
+  document.getElementById('activityName').focus();
+  return;
+ }
+ const tog=e.target.closest('[data-toggle-activity]');
+ if(tog){try{await rpc('admin_cambiar_estado_actividad_catalogo',{p_id:tog.dataset.toggleActivity,p_activo:tog.dataset.newState==='true'});await cargarCatalogoActividades();await Promise.all([cargarAdmin(),cargarTodo()])}catch(err){document.getElementById('activityAdminMessage').textContent='No se pudo cambiar el estado: '+err.message}return}
+ const del=e.target.closest('[data-delete-activity]');
+ if(del){if(!confirm('¿Eliminar definitivamente esta actividad? Si ya fue utilizada, el sistema no permitirá eliminarla y deberá desactivarla.'))return;try{await rpc('admin_eliminar_actividad_catalogo',{p_id:del.dataset.deleteActivity});await cargarCatalogoActividades();await Promise.all([cargarAdmin(),cargarTodo()]);document.getElementById('activityAdminMessage').textContent='Actividad eliminada.'}catch(err){const m=String(err.message||'');document.getElementById('activityAdminMessage').textContent=m.includes('ACTIVIDAD_EN_USO')?'Esta actividad ya tiene registros. Para conservar el historial, desactívela en lugar de eliminarla.':'No se pudo eliminar: '+m}return}
+});
+
 document.addEventListener('change',async e=>{
  const chk=e.target.closest('[data-close-permission]');
  if(!chk)return;
@@ -751,16 +807,7 @@ function renderParticipantesEdicion(seleccionados=[]){
 function idsParticipantesEdicion(){
  return [...document.querySelectorAll('input[name="edit-participante"]:checked')].map(x=>x.value);
 }
-function actualizarAyudaParticipantesEdicion(){
- const actividad=document.getElementById('editActividad').value;
- const multiple=actividadesMultiples.has(actividad);
- const minimoDos=actividadesMinimoDos.has(actividad);
- document.getElementById('editParticipantHint').textContent=minimoDos
-  ?'Esta actividad requiere dos o más colaboradores.'
-  :multiple
-   ?'Esta actividad permite uno o más colaboradores.'
-   :'Esta actividad requiere exactamente un colaborador.';
-}
+function actualizarAyudaParticipantesEdicion(){const actividad=document.getElementById('editActividad').value,hint=document.getElementById('editParticipantHint');if(hint)hint.textContent=reglaActividadTexto(actividad)}
 document.getElementById('editActividad').addEventListener('change',actualizarAyudaParticipantesEdicion);
 
 async function abrirEditorRegistro(tipo,id){
@@ -785,7 +832,7 @@ async function abrirEditorRegistro(tipo,id){
   document.getElementById('editRecordSubtitle').textContent=`${r.empleado} · ${new Date(r.created_at).toLocaleString('es-HN')}`;
   document.getElementById('editPrepFields').hidden=true;
   document.getElementById('editActFields').hidden=false;
-  document.getElementById('editActividad').innerHTML=actividades.map(a=>`<option ${a===r.actividad?'selected':''}>${esc(a)}</option>`).join('');
+  document.getElementById('editActividad').innerHTML=[...new Set([r.actividad,...actividades])].filter(Boolean).map(a=>`<option value="${esc(a)}" ${a===r.actividad?'selected':''}>${esc(a)}${!actividades.includes(a)?' (inactiva)':''}</option>`).join('');
 
   const {data:timer,error}=await supabase.from('cronometros')
     .select('colaborador_id,datos')
@@ -1355,5 +1402,5 @@ async function construirReporte(preparaciones,actividades,ausencias,colaboradore
 
 descargarExcelBtn.addEventListener('click',async()=>{const desde=reporteDesde.value,hasta=reporteHasta.value;if(!desde||!hasta)return alert('Seleccione la fecha inicial y final.');if(desde>hasta)return alert('La fecha inicial no puede ser mayor que la fecha final.');if(!navigator.onLine)return alert('Se necesita conexión para consultar la información de Supabase.');if(typeof ExcelJS==='undefined')return alert('No se pudo cargar el generador de Excel. Revise la conexión.');const original=descargarExcelBtn.textContent;descargarExcelBtn.disabled=true;descargarExcelBtn.textContent='Generando dashboard...';reporteMensaje.textContent='Consultando información y construyendo gráficos ejecutivos...';try{const [p,a,ausencias,colsReporte,participaciones,participacionesPrep]=await Promise.all([obtenerTodosRegistros('historial_preparaciones',desde,hasta),obtenerTodosRegistros('historial_actividades',desde,hasta),obtenerAusenciasPeriodo(desde,hasta),obtenerColaboradoresReporte(),obtenerParticipacionesPeriodo(desde,hasta),obtenerParticipacionesPreparacionPeriodo(desde,hasta)]);if(!p.length&&!a.length&&!ausencias.length){reporteMensaje.textContent='No se encontraron registros ni ausencias en el período seleccionado.';return}const libro=await construirReporte(p,a,ausencias,colsReporte,participaciones,desde,hasta),buffer=await libro.xlsx.writeBuffer();descargarBlob(new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),`Dashboard_Productividad_BIA_${desde}_al_${hasta}.xlsx`);reporteMensaje.textContent=`Dashboard generado con ${p.length} preparaciones, ${a.length} actividades y ${ausencias.length} registros de ausencia.`}catch(err){console.error(err);reporteMensaje.textContent='No se pudo generar el reporte: '+err.message}finally{descargarExcelBtn.disabled=false;descargarExcelBtn.textContent=original}});
 
-supabase.channel('cronometros-operacion-v293').on('postgres_changes',{event:'*',schema:'public',table:'cronometros'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'historial_preparaciones'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'historial_actividades'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'colaboradores'},()=>{cargarTodo();if(esAdmin)cargarAdmin()}).on('postgres_changes',{event:'*',schema:'public',table:'ausencias_personal'},()=>{if(esAdmin)cargarAusenciasAdmin();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'metas_productividad'},()=>{cargarMetas();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'pausas_cronometros'},()=>{if(esAdmin)cargarAuditoria('pausas')}).on('postgres_changes',{event:'*',schema:'public',table:'cierres_diarios'},()=>{cargarEstadoCierre();if(esAdmin)cargarAuditoria('cierres')}).on('postgres_changes',{event:'*',schema:'public',table:'actividad_participaciones'},()=>{cargarTodo();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'preparacion_participaciones'},()=>{cargarTodo();actualizarDashboard()}).subscribe();
+supabase.channel('cronometros-operacion-v295').on('postgres_changes',{event:'*',schema:'public',table:'cronometros'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'historial_preparaciones'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'historial_actividades'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'colaboradores'},()=>{cargarTodo();if(esAdmin)cargarAdmin()}).on('postgres_changes',{event:'*',schema:'public',table:'actividades_catalogo'},()=>{cargarCatalogoActividades().then(()=>cargarTodo());if(esAdmin)cargarAdmin()}).on('postgres_changes',{event:'*',schema:'public',table:'ausencias_personal'},()=>{if(esAdmin)cargarAusenciasAdmin();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'metas_productividad'},()=>{cargarMetas();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'pausas_cronometros'},()=>{if(esAdmin)cargarAuditoria('pausas')}).on('postgres_changes',{event:'*',schema:'public',table:'cierres_diarios'},()=>{cargarEstadoCierre();if(esAdmin)cargarAuditoria('cierres')}).on('postgres_changes',{event:'*',schema:'public',table:'actividad_participaciones'},()=>{cargarTodo();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'preparacion_participaciones'},()=>{cargarTodo();actualizarDashboard()}).subscribe();
 try{await cargarMetas();await cargarTodo();await actualizarDashboard();if(esAdmin)await cargarAuditoria()}catch(e){document.getElementById('conexion').textContent='No se pudo cargar la información: '+e.message}

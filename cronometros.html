@@ -1394,6 +1394,16 @@ body{
   }
 }
 
+
+/* v2.9.5 · Administración de actividades */
+.activity-admin-section{border-top:1px solid var(--border);margin-top:20px;padding-top:2px}
+.activity-admin-section h3{margin:0;color:var(--navy);font-size:17px}
+.activity-catalog-form{grid-template-columns:1.5fr 1fr .45fr auto!important}
+#activityCatalogTable td:last-child{white-space:nowrap}
+#activityCatalogTable button{margin:2px 2px}
+@media(max-width:900px){.activity-catalog-form{grid-template-columns:1fr 1fr!important}.activity-catalog-form .admin-form-actions{grid-column:1/-1}}
+@media(max-width:600px){.activity-catalog-form{grid-template-columns:1fr!important}.activity-admin-section .table{overflow-x:auto}}
+
 </style>
 
   <link rel="manifest" href="./manifest.webmanifest">
@@ -1409,7 +1419,7 @@ body{
     <img class="header-logo" src="./assets/bia-honduras-logo.png" alt="BIA Honduras">
     <div class="brand-copy"><div class="brand-eyebrow">BIA HONDURAS · OPERACIONES</div><h1>Control de Tiempos</h1><div>Productividad, preparación y actividades en tiempo real</div></div>
   </div>
-  <div class="user"><span id="networkStatus" class="network"></span><span id="userAvatar" class="user-avatar">BI</span><button id="installApp" class="install-btn" hidden>Instalar app</button><span id="roleBadge" class="role-badge">Verificando rol…</span><span id="userEmail" class="user-email"></span><button id="adminOpenBtn" class="light" type="button" hidden>Administrar colaboradores</button><button onclick="window.salir()">Cerrar sesión</button></div>
+  <div class="user"><span id="networkStatus" class="network"></span><span id="userAvatar" class="user-avatar">BI</span><button id="installApp" class="install-btn" hidden>Instalar app</button><span id="roleBadge" class="role-badge">Verificando rol…</span><span id="userEmail" class="user-email"></span><button id="adminOpenBtn" class="light" type="button" hidden>Administración</button><button onclick="window.salir()">Cerrar sesión</button></div>
 </header>
 
 <div class="container">
@@ -1433,7 +1443,7 @@ body{
   
   <section id="adminPanel" class="card" hidden>
     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-      <div><h2 style="margin-bottom:4px">Administración de colaboradores</h2><div class="note">Solo los usuarios con rol administrador pueden crear, editar, activar o desactivar colaboradores.</div></div>
+      <div><h2 style="margin-bottom:4px">Administración</h2><div class="note">Gestione colaboradores, actividades y permisos operativos desde un solo lugar.</div></div>
       <button id="adminCloseBtn" class="light" type="button">Cerrar panel</button>
     </div>
     <form id="collabForm" class="admin-form">
@@ -1444,6 +1454,21 @@ body{
     </form>
     <div id="adminMessage" class="note" style="margin:10px 0"></div>
     <div class="table"><table><thead><tr><th>Nombre</th><th>Código</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="collabTable"></tbody></table></div>
+    <div class="admin-subsection activity-admin-section">
+      <div class="section-head" style="margin-top:22px">
+        <div><h3>Catálogo de actividades</h3><div class="note">Agregue nuevas actividades, cambie la cantidad permitida de participantes o desactive las que ya no se utilizan.</div></div>
+        <span class="badge">Actividades</span>
+      </div>
+      <form id="activityCatalogForm" class="admin-form activity-catalog-form">
+        <input id="activityCatalogId" type="hidden">
+        <div><label>Nombre de actividad</label><input id="activityName" maxlength="120" required placeholder="Ejemplo: Armado de exhibidores"></div>
+        <div><label>Participantes permitidos</label><select id="activityRule" required><option value="individual">1 persona</option><option value="uno_mas">1 o más personas</option><option value="min_dos">Mínimo 2 personas</option><option value="uno_dos">1 o 2 personas</option></select></div>
+        <div><label>Orden</label><input id="activityOrder" type="number" min="1" max="9999" value="100"></div>
+        <div class="admin-form-actions"><button class="primary" type="submit">Guardar actividad</button><button id="activityCatalogCancel" class="light" type="button">Limpiar</button></div>
+      </form>
+      <div id="activityAdminMessage" class="note" style="margin:10px 0"></div>
+      <div class="table"><table><thead><tr><th>Actividad</th><th>Participantes</th><th>Orden</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="activityCatalogTable"></tbody></table></div>
+    </div>
   </section>
   
 <section class="card" id="dashboardApp">
@@ -1722,7 +1747,7 @@ body{
   </section>
 </div>
 
-<footer class="app-footer"><img src="./assets/bia-honduras-logo.png" alt="BIA Honduras"> Control de Tiempos · PWA v2.8.2</footer>
+<footer class="app-footer"><img src="./assets/bia-honduras-logo.png" alt="BIA Honduras"> Control de Tiempos · PWA v2.9.5</footer>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <script type="module" src="./cronometros.js"></script>
 <script src="./pwa.js" defer></script>
