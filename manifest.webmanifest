@@ -81,6 +81,28 @@
           "sizes": "192x192"
         }
       ]
+    },
+    {
+      "name": "Abrir CBA",
+      "short_name": "CBA",
+      "url": "./cba.html",
+      "icons": [
+        {
+          "src": "./icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Abrir SRC",
+      "short_name": "SRC",
+      "url": "./src.html",
+      "icons": [
+        {
+          "src": "./icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ]
 }
