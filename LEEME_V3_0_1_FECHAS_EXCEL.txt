@@ -1,0 +1,25 @@
+BIA HONDURAS - PWA v3.0.1
+
+MEJORA: RANGO DE FECHAS PARA EXCEL
+
+El módulo Reporte de productividad en Excel ahora muestra de forma visible:
+- Fecha inicial
+- Fecha final
+- Botones rápidos: Hoy, Esta semana, Este mes y Mes anterior
+
+El reporte se genera exclusivamente para la sede activa:
+- SPS
+- CBA
+- SRC
+
+MEJORA DE FILTRADO
+Preparaciones se filtran por fecha_preparacion y actividades por fecha, no únicamente por la fecha técnica de creación del registro. Esto permite que el Excel corresponda al día operacional seleccionado.
+
+El nombre del archivo incluye la sede y el rango:
+Dashboard_Productividad_BIA_SPS_2026-09-01_al_2026-09-05.xlsx
+
+INSTALACIÓN
+1. No requiere SQL adicional.
+2. Reemplazar todos los archivos web/PWA por v3.0.1.
+3. Ctrl + F5 en web.
+4. En Android cerrar por completo la PWA; si conserva caché antigua, borrarla o reinstalar.

@@ -1208,12 +1208,58 @@ const reporteHasta=document.getElementById('reporteHasta');
 const descargarExcelBtn=document.getElementById('descargarExcelBtn');
 const reporteMensaje=document.getElementById('reporteMensaje');
 
-function inicializarFechasReporte(){
- const ahora=new Date();
- reporteHasta.value=ahora.toISOString().slice(0,10);
- reporteDesde.value=new Date(ahora.getFullYear(),ahora.getMonth(),1).toISOString().slice(0,10);
+function fechaLocalISO(d){
+ const y=d.getFullYear();
+ const m=String(d.getMonth()+1).padStart(2,'0');
+ const dia=String(d.getDate()).padStart(2,'0');
+ return `${y}-${m}-${dia}`;
 }
+function lunesDeSemana(fecha){
+ const d=new Date(fecha.getFullYear(),fecha.getMonth(),fecha.getDate());
+ const dia=d.getDay()||7;
+ d.setDate(d.getDate()-dia+1);
+ return d;
+}
+function marcarPresetReporte(tipo){
+ document.querySelectorAll('[data-report-period]').forEach(b=>b.classList.toggle('active',b.dataset.reportPeriod===tipo));
+}
+function actualizarTextoPeriodoReporte(){
+ const el=document.getElementById('reportePeriodoSeleccionado');
+ if(!el||!reporteDesde||!reporteHasta)return;
+ if(!reporteDesde.value||!reporteHasta.value){el.textContent='Seleccione la fecha inicial y final.';return}
+ const desde=new Date(`${reporteDesde.value}T12:00:00`);
+ const hasta=new Date(`${reporteHasta.value}T12:00:00`);
+ const f=d=>d.toLocaleDateString('es-HN',{day:'2-digit',month:'short',year:'numeric'});
+ const sede=typeof SEDE_ACTUAL!=='undefined'?SEDE_ACTUAL:'';
+ el.textContent=`${sede?`Sede ${sede} · `:''}${f(desde)} al ${f(hasta)} · El Excel incluirá únicamente este período.`;
+}
+function aplicarPeriodoReporte(tipo){
+ const hoyD=new Date();
+ let desde,hasta;
+ if(tipo==='today'){
+  desde=hasta=hoyD;
+ }else if(tipo==='week'){
+  desde=lunesDeSemana(hoyD);hasta=hoyD;
+ }else if(tipo==='previous-month'){
+  desde=new Date(hoyD.getFullYear(),hoyD.getMonth()-1,1);
+  hasta=new Date(hoyD.getFullYear(),hoyD.getMonth(),0);
+ }else{
+  desde=new Date(hoyD.getFullYear(),hoyD.getMonth(),1);hasta=hoyD;tipo='month';
+ }
+ reporteDesde.value=fechaLocalISO(desde);
+ reporteHasta.value=fechaLocalISO(hasta);
+ marcarPresetReporte(tipo);
+ actualizarTextoPeriodoReporte();
+}
+function inicializarFechasReporte(){aplicarPeriodoReporte('month')}
 inicializarFechasReporte();
+reporteDesde?.addEventListener('change',()=>{marcarPresetReporte('');actualizarTextoPeriodoReporte()});
+reporteHasta?.addEventListener('change',()=>{marcarPresetReporte('');actualizarTextoPeriodoReporte()});
+document.addEventListener('click',e=>{
+ const b=e.target.closest('[data-report-period]');
+ if(!b)return;
+ aplicarPeriodoReporte(b.dataset.reportPeriod);
+});
 function fechaHoraReporte(valor){if(!valor)return '';return new Date(valor).toLocaleString('es-HN',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'})}
 function redondear(n,dec=2){const p=10**dec;return Math.round((Number(n)||0)*p)/p}
 function fechaSiguiente(fecha){const d=new Date(`${fecha}T00:00:00`);d.setDate(d.getDate()+1);return d.toISOString()}
@@ -1237,7 +1283,22 @@ async function obtenerColaboradoresReporte(){
  return data||[];
 }
 
-async function obtenerTodosRegistros(tabla,desde,hasta){const lote=1000;let inicio=0,todo=[];while(true){const {data,error}=await supabase.from(tabla).select('*').eq('sede',SEDE_ACTUAL).gte('created_at',`${desde}T00:00:00`).lt('created_at',fechaSiguiente(hasta)).order('created_at',{ascending:true}).range(inicio,inicio+lote-1);if(error)throw error;todo.push(...(data||[]));if(!data||data.length<lote)break;inicio+=lote}return todo}
+async function obtenerTodosRegistros(tabla,desde,hasta){
+ const lote=1000;
+ let inicio=0,todo=[];
+ const campoFecha=tabla==='historial_preparaciones'?'fecha_preparacion':tabla==='historial_actividades'?'fecha':'created_at';
+ while(true){
+  let q=supabase.from(tabla).select('*').eq('sede',SEDE_ACTUAL);
+  if(campoFecha==='created_at')q=q.gte(campoFecha,`${desde}T00:00:00`).lt(campoFecha,fechaSiguiente(hasta));
+  else q=q.gte(campoFecha,desde).lte(campoFecha,hasta);
+  const {data,error}=await q.order(campoFecha,{ascending:true}).range(inicio,inicio+lote-1);
+  if(error)throw error;
+  todo.push(...(data||[]));
+  if(!data||data.length<lote)break;
+  inicio+=lote;
+ }
+ return todo;
+}
 function participantesActividad(registro){if(Array.isArray(registro.participantes)&&registro.participantes.length)return registro.participantes.filter(Boolean);return String(registro.empleado||'').split(',').map(x=>x.trim()).filter(Boolean)}
 function descargarBlob(blob,nombre){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=nombre;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500)}
 async function archivoABase64(url){try{const r=await fetch(url);const b=await r.blob();return await new Promise((ok,no)=>{const fr=new FileReader();fr.onload=()=>ok(String(fr.result).split(',')[1]);fr.onerror=no;fr.readAsDataURL(b)})}catch{return null}}
@@ -1462,7 +1523,7 @@ async function construirReporte(preparaciones,actividades,ausencias,colaboradore
  return wb;
 }
 
-descargarExcelBtn.addEventListener('click',async()=>{const desde=reporteDesde.value,hasta=reporteHasta.value;if(!desde||!hasta)return alert('Seleccione la fecha inicial y final.');if(desde>hasta)return alert('La fecha inicial no puede ser mayor que la fecha final.');if(!navigator.onLine)return alert('Se necesita conexión para consultar la información de Supabase.');if(typeof ExcelJS==='undefined')return alert('No se pudo cargar el generador de Excel. Revise la conexión.');const original=descargarExcelBtn.textContent;descargarExcelBtn.disabled=true;descargarExcelBtn.textContent='Generando dashboard...';reporteMensaje.textContent='Consultando información y construyendo gráficos ejecutivos...';try{const [p,a,ausencias,colsReporte,participaciones,participacionesPrep]=await Promise.all([obtenerTodosRegistros('historial_preparaciones',desde,hasta),obtenerTodosRegistros('historial_actividades',desde,hasta),obtenerAusenciasPeriodo(desde,hasta),obtenerColaboradoresReporte(),obtenerParticipacionesPeriodo(desde,hasta),obtenerParticipacionesPreparacionPeriodo(desde,hasta)]);if(!p.length&&!a.length&&!ausencias.length){reporteMensaje.textContent='No se encontraron registros ni ausencias en el período seleccionado.';return}const libro=await construirReporte(p,a,ausencias,colsReporte,participaciones,desde,hasta),buffer=await libro.xlsx.writeBuffer();descargarBlob(new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),`Dashboard_Productividad_BIA_${SEDE_ACTUAL}_${desde}_al_${hasta}.xlsx`);reporteMensaje.textContent=`Dashboard generado con ${p.length} preparaciones, ${a.length} actividades y ${ausencias.length} registros de ausencia.`}catch(err){console.error(err);reporteMensaje.textContent='No se pudo generar el reporte: '+err.message}finally{descargarExcelBtn.disabled=false;descargarExcelBtn.textContent=original}});
+descargarExcelBtn.addEventListener('click',async()=>{const desde=reporteDesde.value,hasta=reporteHasta.value;if(!desde||!hasta)return alert('Seleccione la fecha inicial y final.');if(desde>hasta)return alert('La fecha inicial no puede ser mayor que la fecha final.');if(!navigator.onLine)return alert('Se necesita conexión para consultar la información de Supabase.');if(typeof ExcelJS==='undefined')return alert('No se pudo cargar el generador de Excel. Revise la conexión.');const original=descargarExcelBtn.textContent;descargarExcelBtn.disabled=true;descargarExcelBtn.textContent='Generando dashboard...';reporteMensaje.textContent=`Consultando ${SEDE_ACTUAL} del ${desde} al ${hasta} y construyendo el Excel...`;try{const [p,a,ausencias,colsReporte,participaciones,participacionesPrep]=await Promise.all([obtenerTodosRegistros('historial_preparaciones',desde,hasta),obtenerTodosRegistros('historial_actividades',desde,hasta),obtenerAusenciasPeriodo(desde,hasta),obtenerColaboradoresReporte(),obtenerParticipacionesPeriodo(desde,hasta),obtenerParticipacionesPreparacionPeriodo(desde,hasta)]);if(!p.length&&!a.length&&!ausencias.length){reporteMensaje.textContent='No se encontraron registros ni ausencias en el período seleccionado.';return}const libro=await construirReporte(p,a,ausencias,colsReporte,participaciones,desde,hasta),buffer=await libro.xlsx.writeBuffer();descargarBlob(new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),`Dashboard_Productividad_BIA_${SEDE_ACTUAL}_${desde}_al_${hasta}.xlsx`);reporteMensaje.textContent=`Excel ${SEDE_ACTUAL} generado para ${desde} al ${hasta}: ${p.length} preparaciones, ${a.length} actividades y ${ausencias.length} registros de ausencia.`}catch(err){console.error(err);reporteMensaje.textContent='No se pudo generar el reporte: '+err.message}finally{descargarExcelBtn.disabled=false;descargarExcelBtn.textContent=original}});
 
 supabase.channel('cronometros-operacion-v300').on('postgres_changes',{event:'*',schema:'public',table:'cronometros'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'historial_preparaciones'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'historial_actividades'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'colaboradores'},()=>{cargarTodo();if(esAdmin)cargarAdmin()}).on('postgres_changes',{event:'*',schema:'public',table:'actividades_catalogo'},()=>{cargarCatalogoActividades().then(()=>cargarTodo());if(esAdmin)cargarAdmin()}).on('postgres_changes',{event:'*',schema:'public',table:'ausencias_personal'},()=>{if(esAdmin)cargarAusenciasAdmin();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'metas_productividad'},()=>{cargarMetas();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'pausas_cronometros'},()=>{if(esAdmin)cargarAuditoria('pausas')}).on('postgres_changes',{event:'*',schema:'public',table:'cierres_diarios'},()=>{cargarEstadoCierre();if(esAdmin)cargarAuditoria('cierres')}).on('postgres_changes',{event:'*',schema:'public',table:'actividad_participaciones'},()=>{cargarTodo();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'preparacion_participaciones'},()=>{cargarTodo();actualizarDashboard()}).subscribe();
 try{await cargarMetas();await cargarTodo();await actualizarDashboard();if(esAdmin)await cargarAuditoria()}catch(e){document.getElementById('conexion').textContent='No se pudo cargar la información: '+e.message}
