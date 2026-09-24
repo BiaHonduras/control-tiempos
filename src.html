@@ -1510,6 +1510,25 @@ body{
   #reportesExcel .export-btn{grid-column:1!important}
 }
 
+
+/* v3.0.2 · Calidad de preparación */
+.quality-record-btn{background:#fff7e8;color:#a35e00;border:1px solid #f0cf91}
+.quality-record-btn:hover{background:#fff1d2}
+.quality-modal{width:min(760px,96vw)}
+.quality-summary{padding:11px 13px;border-radius:11px;background:#eef6ff;color:#244a78;margin-bottom:14px;font-size:12px}
+.quality-form-grid{display:grid;grid-template-columns:1.3fr .55fr;gap:10px}
+.quality-participants-title{margin-top:13px;font-weight:900;color:#173b63;font-size:12px}
+.quality-participant{display:flex!important;align-items:flex-start;gap:8px;padding:9px 10px!important}
+.quality-participant input{width:auto!important;min-height:auto!important;margin-top:3px}
+.quality-participant small{display:block;color:#73839a;font-size:10px;margin-top:2px}
+.quality-existing{display:grid;gap:8px;margin-top:12px}
+.quality-existing-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;border:1px solid var(--border);border-radius:11px;padding:11px;background:#fbfcfe}
+.quality-existing-row strong{color:#173b63}
+.quality-existing-meta{font-size:11px;color:#67788c;margin-top:3px}
+.quality-existing-note{font-size:11px;color:#4d6076;margin-top:5px}
+.quality-empty{padding:12px;border-radius:10px;background:#f7f9fc;color:#738196;font-size:12px;text-align:center}
+@media(max-width:620px){.quality-form-grid{grid-template-columns:1fr}.quality-existing-row{grid-template-columns:1fr}.quality-existing-row button{width:100%}}
+
 </style>
 
   <link rel="manifest" href="./manifest.webmanifest">
@@ -1826,6 +1845,67 @@ body{
   </section>
 </div>
 
+
+<div id="prepErrorModal" class="modal-backdrop" hidden>
+  <section class="edit-modal quality-modal" role="dialog" aria-modal="true" aria-labelledby="prepErrorTitle">
+    <div class="edit-modal-head">
+      <div>
+        <h2 id="prepErrorTitle">Errores de preparación</h2>
+        <div id="prepErrorSubtitle" class="note"></div>
+      </div>
+      <button id="prepErrorClose" class="modal-close" type="button" aria-label="Cerrar">×</button>
+    </div>
+
+    <div class="quality-summary">
+      Registre únicamente errores confirmados de la preparación. En el Excel de calidad los nombres se sustituyen por Colaborador 1, Colaborador 2, etc.
+    </div>
+
+    <form id="prepErrorForm">
+      <input id="prepErrorHistoryId" type="hidden">
+
+      <div class="quality-form-grid">
+        <div>
+          <label for="prepErrorTipo">Tipo de error</label>
+          <select id="prepErrorTipo" required>
+            <option>Faltante de producto</option>
+            <option>Sobrante de producto</option>
+            <option>Producto equivocado</option>
+            <option>Cantidad incorrecta</option>
+            <option>Lote o fecha incorrecta</option>
+            <option>Producto dañado</option>
+            <option>Error de documentación / factura</option>
+            <option>Otro</option>
+          </select>
+        </div>
+        <div>
+          <label for="prepErrorCantidad">Cantidad de errores</label>
+          <input id="prepErrorCantidad" type="number" min="1" step="1" value="1" required>
+        </div>
+      </div>
+
+      <div class="quality-participants-title">Colaborador(es) relacionado(s) con el error</div>
+      <div id="prepErrorParticipants" class="edit-participants"></div>
+
+      <div style="margin-top:12px">
+        <label for="prepErrorObservacion">Observación administrativa</label>
+        <textarea id="prepErrorObservacion" rows="3"
+          style="width:100%;padding:10px;border:1px solid var(--border);border-radius:9px"
+          placeholder="Detalle opcional del hallazgo"></textarea>
+      </div>
+
+      <div class="modal-actions">
+        <button id="prepErrorCancel" class="light" type="button">Cerrar</button>
+        <button class="primary" type="submit">Registrar error</button>
+      </div>
+    </form>
+
+    <div style="margin-top:18px">
+      <h3 style="margin:0 0 8px;color:var(--navy)">Errores registrados</h3>
+      <div id="prepErrorExisting" class="quality-existing"></div>
+    </div>
+  </section>
+</div>
+
 <div id="editRecordModal" class="modal-backdrop" hidden>
   <section class="edit-modal" role="dialog" aria-modal="true" aria-labelledby="editRecordTitle">
     <div class="edit-modal-head">
@@ -1882,7 +1962,7 @@ body{
   </section>
 </div>
 
-<footer class="app-footer"><img src="./assets/bia-honduras-logo.png" alt="BIA Honduras"> Control de Tiempos · PWA v3.0.1</footer>
+<footer class="app-footer"><img src="./assets/bia-honduras-logo.png" alt="BIA Honduras"> Control de Tiempos · PWA v3.0.2</footer>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <script type="module" src="./cronometros.js"></script>
 <script src="./pwa.js" defer></script>

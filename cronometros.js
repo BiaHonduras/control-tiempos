@@ -549,7 +549,7 @@ async function cargarTodo(){
  actualizarDisponibilidadColaboradores();
  actualizarResumenDia(prep||[],acts||[],activosNormalizados);
 
- document.getElementById('prepHistory').innerHTML=(prep||[]).map(r=>`<tr><td>${new Date(r.created_at).toLocaleString('es-HN')}</td><td>${esc(r.empleado)}</td><td>${esc(r.zona)}</td><td>${esc(r.tipo)}</td><td>${r.facturas}</td><td>${Number(r.libras).toFixed(2)}</td><td>${fmt(r.segundos)}</td><td>${esc(r.finalizado_por_email||'')}</td>${esAdmin?`<td><div class="record-actions"><button class="edit-record-btn" data-edit-record="preparacion" data-record-id="${r.id}">Editar</button><button class="delete-record-btn" data-delete-record="preparacion" data-record-id="${r.id}">Eliminar</button></div></td>`:''}</tr>`).join('');
+ document.getElementById('prepHistory').innerHTML=(prep||[]).map(r=>`<tr><td>${new Date(r.created_at).toLocaleString('es-HN')}</td><td>${esc(r.empleado)}</td><td>${esc(r.zona)}</td><td>${esc(r.tipo)}</td><td>${r.facturas}</td><td>${Number(r.libras).toFixed(2)}</td><td>${fmt(r.segundos)}</td><td>${esc(r.finalizado_por_email||'')}</td>${esAdmin?`<td><div class="record-actions"><button class="quality-record-btn" data-prep-errors="${r.id}">Errores</button><button class="edit-record-btn" data-edit-record="preparacion" data-record-id="${r.id}">Editar</button><button class="delete-record-btn" data-delete-record="preparacion" data-record-id="${r.id}">Eliminar</button></div></td>`:''}</tr>`).join('');
  document.getElementById('actHistory').innerHTML=(acts||[]).map(r=>`<tr><td>${new Date(r.created_at).toLocaleString('es-HN')}</td><td>${esc(r.empleado)}</td><td>${esc(r.actividad)}</td><td>${fmt(r.segundos)}</td><td>${esc(r.finalizado_por_email||'')}</td>${esAdmin?`<td><div class="record-actions"><button class="edit-record-btn" data-edit-record="actividad" data-record-id="${r.id}">Editar</button><button class="delete-record-btn" data-delete-record="actividad" data-record-id="${r.id}">Eliminar</button></div></td>`:''}</tr>`).join('');
  document.getElementById('conexion').textContent='Conectado. Datos sincronizados con Supabase.';
 }
@@ -838,6 +838,215 @@ document.addEventListener('click',async e=>{
   absenceStatus.textContent='No se pudo eliminar: '+String(err?.message||err);
  }finally{
   btn.disabled=false;
+ }
+});
+
+
+
+// ===== CALIDAD / ERRORES EN PREPARACIÓN v3.0.2 =====
+const prepErrorModal=document.getElementById('prepErrorModal');
+const prepErrorForm=document.getElementById('prepErrorForm');
+let prepErrorContext=null;
+
+function cerrarErroresPreparacion(){
+ if(prepErrorModal)prepErrorModal.hidden=true;
+ if(prepErrorForm)prepErrorForm.reset();
+ prepErrorContext=null;
+ const list=document.getElementById('prepErrorExisting');
+ if(list)list.innerHTML='';
+}
+document.getElementById('prepErrorClose')?.addEventListener('click',cerrarErroresPreparacion);
+document.getElementById('prepErrorCancel')?.addEventListener('click',cerrarErroresPreparacion);
+prepErrorModal?.addEventListener('click',e=>{if(e.target===prepErrorModal)cerrarErroresPreparacion()});
+
+async function obtenerParticipantesPreparacionParaError(r){
+ let {data:parts,error}=await supabase.from('preparacion_participaciones')
+  .select('colaborador_id,colaborador_nombre')
+  .eq('sede',SEDE_ACTUAL)
+  .eq('cronometro_id',r.timer_id)
+  .order('colaborador_nombre');
+ if(error)throw error;
+
+ let ids=[...new Set((parts||[]).map(x=>x.colaborador_id).filter(Boolean))];
+
+ if(!ids.length){
+  const nombres=String(r.empleado||'').split(',').map(x=>x.trim()).filter(Boolean);
+  if(nombres.length){
+   const q=await supabase.from('colaboradores')
+    .select('id,nombre,numero_reporte')
+    .eq('sede',SEDE_ACTUAL)
+    .in('nombre',nombres)
+    .order('numero_reporte');
+   if(q.error)throw q.error;
+   return q.data||[];
+  }
+  if(r.colaborador_id)ids=[r.colaborador_id];
+ }
+
+ if(!ids.length)return [];
+
+ const q=await supabase.from('colaboradores')
+  .select('id,nombre,numero_reporte')
+  .eq('sede',SEDE_ACTUAL)
+  .in('id',ids)
+  .order('numero_reporte');
+ if(q.error)throw q.error;
+
+ const byId=new Map((q.data||[]).map(x=>[x.id,x]));
+ return ids.map(id=>byId.get(id)).filter(Boolean);
+}
+
+async function cargarErroresPreparacionExistentes(){
+ if(!prepErrorContext)return;
+ const historialId=prepErrorContext.id;
+
+ const {data:errores,error}=await supabase.from('errores_preparacion')
+  .select('*')
+  .eq('sede',SEDE_ACTUAL)
+  .eq('historial_preparacion_id',historialId)
+  .order('created_at',{ascending:false});
+ if(error)throw error;
+
+ const ids=(errores||[]).map(x=>x.id);
+ let participantes=[];
+ if(ids.length){
+  const q=await supabase.from('errores_preparacion_participantes')
+   .select('error_id,colaborador_id,numero_reporte')
+   .eq('sede',SEDE_ACTUAL)
+   .in('error_id',ids);
+  if(q.error)throw q.error;
+  participantes=q.data||[];
+ }
+
+ const pByError=new Map();
+ participantes.forEach(p=>{
+  if(!pByError.has(p.error_id))pByError.set(p.error_id,[]);
+  pByError.get(p.error_id).push(p);
+ });
+
+ const box=document.getElementById('prepErrorExisting');
+ if(!box)return;
+
+ if(!(errores||[]).length){
+  box.innerHTML='<div class="quality-empty">No hay errores registrados para esta preparación.</div>';
+  return;
+ }
+
+ box.innerHTML=(errores||[]).map(e=>{
+  const nums=(pByError.get(e.id)||[])
+   .map(p=>Number(p.numero_reporte))
+   .filter(Number.isFinite)
+   .sort((a,b)=>a-b)
+   .map(n=>`Colaborador ${n}`)
+   .join(', ');
+  return `<div class="quality-existing-row">
+    <div>
+      <strong>${esc(e.tipo_error)}</strong>
+      <div class="quality-existing-meta">${esc(nums||'Sin asignación')} · ${Number(e.cantidad||1)} error(es)</div>
+      ${e.observacion?`<div class="quality-existing-note">${esc(e.observacion)}</div>`:''}
+    </div>
+    <button class="danger" type="button" data-delete-prep-error="${e.id}">Eliminar</button>
+  </div>`;
+ }).join('');
+}
+
+async function abrirErroresPreparacion(historialId){
+ if(!esAdmin)return alert('Solo un administrador puede registrar errores de preparación.');
+ const r=historialPrepMap.get(historialId);
+ if(!r)return alert('No se encontró la preparación.');
+
+ try{
+  const participantes=await obtenerParticipantesPreparacionParaError(r);
+  if(!participantes.length){
+   return alert('No se pudieron identificar los colaboradores que participaron en esta preparación.');
+  }
+
+  prepErrorContext={id:historialId,record:r,participantes};
+  document.getElementById('prepErrorHistoryId').value=historialId;
+  document.getElementById('prepErrorTitle').textContent='Errores de preparación';
+  document.getElementById('prepErrorSubtitle').textContent=
+   `${r.fecha_preparacion||''} · ${r.zona||'Sin zona'} · ${Number(r.facturas||0)} facturas · ${Number(r.libras||0).toFixed(2)} lb`;
+
+  document.getElementById('prepErrorParticipants').innerHTML=participantes.map(p=>
+   `<label class="quality-participant">
+     <input type="checkbox" name="prep-error-participante" value="${p.id}">
+     <span>${esc(p.nombre)} <small>En el informe: Colaborador ${Number(p.numero_reporte||0)}</small></span>
+   </label>`
+  ).join('');
+
+  document.getElementById('prepErrorTipo').value='Faltante de producto';
+  document.getElementById('prepErrorCantidad').value='1';
+  document.getElementById('prepErrorObservacion').value='';
+  await cargarErroresPreparacionExistentes();
+  prepErrorModal.hidden=false;
+ }catch(err){
+  console.error(err);
+  alert('No se pudo abrir el control de errores: '+err.message);
+ }
+}
+
+prepErrorForm?.addEventListener('submit',async e=>{
+ e.preventDefault();
+ if(!esAdmin||!prepErrorContext)return;
+
+ const colaboradorIds=[...document.querySelectorAll('input[name="prep-error-participante"]:checked')].map(x=>x.value);
+ const tipo=document.getElementById('prepErrorTipo').value;
+ const cantidad=Number(document.getElementById('prepErrorCantidad').value);
+ const observacion=document.getElementById('prepErrorObservacion').value.trim();
+
+ if(!colaboradorIds.length)return alert('Seleccione al menos un colaborador relacionado con el error.');
+ if(!tipo)return alert('Seleccione el tipo de error.');
+ if(!Number.isInteger(cantidad)||cantidad<=0)return alert('La cantidad de errores debe ser un entero mayor que cero.');
+
+ const btn=prepErrorForm.querySelector('button[type="submit"]');
+ const original=btn.textContent;
+ btn.disabled=true;
+ btn.textContent='Guardando...';
+
+ try{
+  await rpc('guardar_error_preparacion_sede_v1',{
+   p_id:null,
+   p_historial_id:prepErrorContext.id,
+   p_tipo_error:tipo,
+   p_cantidad:cantidad,
+   p_observacion:observacion||null,
+   p_colaborador_ids:colaboradorIds
+  });
+  document.getElementById('prepErrorCantidad').value='1';
+  document.getElementById('prepErrorObservacion').value='';
+  document.querySelectorAll('input[name="prep-error-participante"]').forEach(x=>x.checked=false);
+  await cargarErroresPreparacionExistentes();
+  alert('Error de preparación registrado correctamente.');
+ }catch(err){
+  console.error(err);
+  alert('No se pudo registrar el error: '+err.message);
+ }finally{
+  btn.disabled=false;
+  btn.textContent=original;
+ }
+});
+
+document.addEventListener('click',async e=>{
+ const open=e.target.closest('[data-prep-errors]');
+ if(open){
+  e.preventDefault();
+  abrirErroresPreparacion(open.dataset.prepErrors);
+  return;
+ }
+
+ const del=e.target.closest('[data-delete-prep-error]');
+ if(!del)return;
+ if(!esAdmin)return;
+ if(!confirm('¿Eliminar este error de preparación?'))return;
+
+ del.disabled=true;
+ try{
+  await rpc('eliminar_error_preparacion_sede_v1',{p_id:del.dataset.deletePrepError});
+  await cargarErroresPreparacionExistentes();
+ }catch(err){
+  alert('No se pudo eliminar el error: '+err.message);
+ }finally{
+  del.disabled=false;
  }
 });
 
@@ -1276,11 +1485,20 @@ async function obtenerAusenciasPeriodo(desde,hasta){
 }
 async function obtenerColaboradoresReporte(){
  const {data,error}=await supabase.from('colaboradores')
-  .select('id,nombre,activo')
+  .select('id,nombre,activo,numero_reporte')
   .eq('sede',SEDE_ACTUAL)
   .order('nombre');
  if(error)throw error;
  return data||[];
+}
+
+
+async function obtenerErroresPreparacionPeriodo(desde,hasta){
+ const data=await rpc('reporte_errores_preparacion_sede_v1',{
+  p_desde:desde,
+  p_hasta:hasta
+ });
+ return Array.isArray(data)?data:[];
 }
 
 async function obtenerTodosRegistros(tabla,desde,hasta){
@@ -1326,7 +1544,7 @@ function dibujarTendencia(datos,titulo,ancho=1000,alto=430){
 function estilosHojaDetalle(ws,anchos){ws.views=[{state:'frozen',ySplit:1}];ws.autoFilter={from:'A1',to:{row:1,column:anchos.length}};ws.columns=anchos.map((w,i)=>({key:`c${i}`,width:w}));const h=ws.getRow(1);h.height=28;h.eachCell(c=>{c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF0B2A55'}};c.font={bold:true,color:{argb:'FFFFFFFF'}};c.alignment={vertical:'middle',horizontal:'center',wrapText:true}});ws.eachRow((row,n)=>{if(n>1){row.height=22;row.eachCell(c=>{c.alignment={vertical:'middle',wrapText:true};c.border={bottom:{style:'hair',color:{argb:'FFD9E2EC'}}}})}})}
 function agregarKpi(ws,r1,c1,r2,c2,titulo,valor,formato){ws.mergeCells(r1,c1,r2,c2);const celda=ws.getCell(r1,c1);celda.value={richText:[{text:`${titulo}\n`,font:{size:11,bold:true,color:{argb:'FF52647A'}}},{text:String(valor),font:{size:23,bold:true,color:{argb:'FF0B2A55'}}}]};celda.alignment={vertical:'middle',horizontal:'center',wrapText:true};celda.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF4F8FD'}};celda.border={top:{style:'thin',color:{argb:'FFC8D8EA'}},bottom:{style:'thin',color:{argb:'FFC8D8EA'}},left:{style:'thin',color:{argb:'FFC8D8EA'}},right:{style:'thin',color:{argb:'FFC8D8EA'}}};if(formato)celda.numFmt=formato}
 
-async function construirReporte(preparaciones,actividades,ausencias,colaboradoresReporte,participaciones,desde,hasta){
+async function construirReporte(preparaciones,actividades,ausencias,colaboradoresReporte,participaciones,participacionesPrep,erroresPreparacion,desde,hasta){
  const wb=new ExcelJS.Workbook();
  wb.creator='BIA Honduras';
  wb.created=new Date();
@@ -1389,6 +1607,34 @@ async function construirReporte(preparaciones,actividades,ausencias,colaboradore
  const horasDisponiblesTotal=Math.max(0,horasProgramadasTotal-horasAusenciaTotal);
  const horasProductivasTotal=horasPrep+horasHombreAct;
  const productividadGeneral=horasDisponiblesTotal?horasProductivasTotal/horasDisponiblesTotal*100:0;
+ const erroresUnicos=new Map();
+ (erroresPreparacion||[]).forEach(e=>{if(!erroresUnicos.has(e.error_id))erroresUnicos.set(e.error_id,e)});
+ const preparacionesConError=new Set((erroresPreparacion||[]).map(e=>e.historial_preparacion_id).filter(Boolean));
+ const totalErrores=[...erroresUnicos.values()].reduce((s,e)=>s+Number(e.cantidad||0),0);
+ const tasaError=preparaciones.length?preparacionesConError.size/preparaciones.length*100:0;
+
+ const numeroPorId=new Map((colaboradoresReporte||[]).map(c=>[c.id,Number(c.numero_reporte||0)]));
+ const preparacionesPorNumero=new Map();
+ const timersPrepConParticipacion=new Set((participacionesPrep||[]).map(x=>x.cronometro_id));
+ (participacionesPrep||[]).forEach(x=>{
+  const n=numeroPorId.get(x.colaborador_id);
+  if(n)preparacionesPorNumero.set(n,(preparacionesPorNumero.get(n)||0)+1);
+ });
+ preparaciones.filter(r=>!timersPrepConParticipacion.has(r.timer_id)).forEach(r=>{
+  const n=numeroPorId.get(r.colaborador_id);
+  if(n)preparacionesPorNumero.set(n,(preparacionesPorNumero.get(n)||0)+1);
+ });
+
+ const calidadPorNumero=new Map();
+ (erroresPreparacion||[]).forEach(e=>{
+  const n=Number(e.numero_reporte||0);
+  if(!n)return;
+  if(!calidadPorNumero.has(n))calidadPorNumero.set(n,{numero:n,prepsError:new Set(),errores:0});
+  const c=calidadPorNumero.get(n);
+  c.prepsError.add(e.historial_preparacion_id);
+  c.errores+=Number(e.cantidad||0);
+ });
+
 
  const dash=wb.addWorksheet('Dashboard Ejecutivo',{views:[{showGridLines:false}]});
  dash.columns=Array.from({length:14},()=>({width:12}));
@@ -1410,6 +1656,10 @@ async function construirReporte(preparaciones,actividades,ausencias,colaboradore
  agregarKpi(dash,5,9,7,10,'FACTURAS',totalFacturas);
  agregarKpi(dash,5,11,7,12,'LIBRAS',redondear(totalLibras));
  agregarKpi(dash,5,13,7,14,'ACTIVIDADES',actividades.length);
+ agregarKpi(dash,8,1,10,4,'PREP. CON ERROR',preparacionesConError.size);
+ agregarKpi(dash,8,5,10,9,'TOTAL ERRORES',totalErrores);
+ agregarKpi(dash,8,10,10,14,'TASA DE ERROR',`${redondear(tasaError,1)}%`);
+
 
  const logo=await archivoABase64('./assets/bia-honduras-logo.png');
  if(logo){
@@ -1424,7 +1674,7 @@ async function construirReporte(preparaciones,actividades,ausencias,colaboradore
    '% de horas productivas sobre horas disponibles'
   ),extension:'png'
  });
- dash.addImage(chart1,{tl:{col:.2,row:8},ext:{width:650,height:280}});
+ dash.addImage(chart1,{tl:{col:.2,row:12},ext:{width:650,height:280}});
 
  const chart2=wb.addImage({
   base64:dibujarDona(
@@ -1432,13 +1682,13 @@ async function construirReporte(preparaciones,actividades,ausencias,colaboradore
    'Distribución de horas-hombre'
   ),extension:'png'
  });
- dash.addImage(chart2,{tl:{col:7.2,row:8},ext:{width:590,height:280}});
+ dash.addImage(chart2,{tl:{col:7.2,row:12},ext:{width:590,height:280}});
 
  const chart3=wb.addImage({
   base64:dibujarTendencia(listaDias,'Tendencia diaria de preparación'),
   extension:'png'
  });
- dash.addImage(chart3,{tl:{col:.2,row:24},ext:{width:650,height:280}});
+ dash.addImage(chart3,{tl:{col:.2,row:28},ext:{width:650,height:280}});
 
  const chart4=wb.addImage({
   base64:dibujarBarras(
@@ -1447,13 +1697,13 @@ async function construirReporte(preparaciones,actividades,ausencias,colaboradore
    'Horas descontadas de la jornada laboral'
   ),extension:'png'
  });
- dash.addImage(chart4,{tl:{col:7.2,row:24},ext:{width:590,height:280}});
+ dash.addImage(chart4,{tl:{col:7.2,row:28},ext:{width:590,height:280}});
 
- dash.mergeCells('A40:N41');
- dash.getCell('A40').value='Metodología: productividad = horas productivas ÷ horas disponibles. Horas disponibles = jornada programada (L-V 8 h, sábado 4 h) menos ausencias registradas. En actividades compartidas, cada participante recibe el tiempo completo como horas-hombre.';
- dash.getCell('A40').fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFF5DB'}};
- dash.getCell('A40').font={italic:true,color:{argb:'FF7A4D00'}};
- dash.getCell('A40').alignment={horizontal:'center',vertical:'middle',wrapText:true};
+ dash.mergeCells('A44:N45');
+ dash.getCell('A44').value='Metodología: productividad = horas productivas ÷ horas disponibles. Horas disponibles = jornada programada (L-V 8 h, sábado 4 h) menos ausencias registradas. En actividades compartidas, cada participante recibe el tiempo completo como horas-hombre.';
+ dash.getCell('A44').fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFF5DB'}};
+ dash.getCell('A44').font={italic:true,color:{argb:'FF7A4D00'}};
+ dash.getCell('A44').alignment={horizontal:'center',vertical:'middle',wrapText:true};
 
  const prod=wb.addWorksheet('Productividad Colaborador');
  prod.addRow([
@@ -1520,10 +1770,131 @@ async function construirReporte(preparaciones,actividades,ausencias,colaboradore
  listaAct.forEach(a=>ra.addRow([a.nombre,a.registros,redondear(a.segundos/3600),redondear(a.horasHombre),redondear(a.registros?(a.segundos/60)/a.registros:0)]));
  estilosHojaDetalle(ra,[42,14,20,16,18]);
 
+
+ const calidad=wb.addWorksheet('Calidad Preparación',{views:[{showGridLines:false}]});
+ calidad.columns=Array.from({length:10},()=>({width:16}));
+ calidad.mergeCells('A1:J2');
+ calidad.getCell('A1').value=`${SEDE_ACTUAL} · CALIDAD DE PREPARACIÓN`;
+ calidad.getCell('A1').fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF061D3B'}};
+ calidad.getCell('A1').font={bold:true,size:20,color:{argb:'FFFFFFFF'}};
+ calidad.getCell('A1').alignment={vertical:'middle',horizontal:'center'};
+ calidad.mergeCells('A3:J3');
+ calidad.getCell('A3').value=`Período: ${desde} al ${hasta} · Reporte anónimo por número de colaborador`;
+ calidad.getCell('A3').font={italic:true,color:{argb:'FF52647A'}};
+ calidad.getCell('A3').alignment={horizontal:'center'};
+ agregarKpi(calidad,5,1,7,3,'PREPARACIONES',preparaciones.length);
+ agregarKpi(calidad,5,4,7,6,'PREP. CON ERROR',preparacionesConError.size);
+ agregarKpi(calidad,5,7,7,8,'ERRORES',totalErrores);
+ agregarKpi(calidad,5,9,7,10,'TASA',`${redondear(tasaError,1)}%`);
+
+ calidad.getCell('A9').value='Colaborador';
+ calidad.getCell('B9').value='Preparaciones asignadas';
+ calidad.getCell('C9').value='Preparaciones con error';
+ calidad.getCell('D9').value='Errores';
+ calidad.getCell('E9').value='% preparaciones con error';
+ for(let c=1;c<=5;c++){
+  const cell=calidad.getCell(9,c);
+  cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFEAF1F8'}};
+  cell.font={bold:true,color:{argb:'FF173B63'}};
+ }
+ const numeros=[...new Set([
+  ...(colaboradoresReporte||[]).map(c=>Number(c.numero_reporte||0)).filter(Boolean),
+  ...calidadPorNumero.keys()
+ ])].sort((a,b)=>a-b);
+ let rowCal=10;
+ numeros.forEach(n=>{
+  const c=calidadPorNumero.get(n)||{prepsError:new Set(),errores:0};
+  const asignadas=preparacionesPorNumero.get(n)||0;
+  const conError=c.prepsError.size;
+  calidad.getCell(rowCal,1).value=`Colaborador ${n}`;
+  calidad.getCell(rowCal,2).value=asignadas;
+  calidad.getCell(rowCal,3).value=conError;
+  calidad.getCell(rowCal,4).value=c.errores;
+  calidad.getCell(rowCal,5).value=asignadas?conError/asignadas:0;
+  calidad.getCell(rowCal,5).numFmt='0.00%';
+  rowCal++;
+ });
+ calidad.getColumn(1).width=22;
+ calidad.getColumn(2).width=24;
+ calidad.getColumn(3).width=26;
+ calidad.getColumn(4).width=14;
+ calidad.getColumn(5).width=27;
+ calidad.mergeCells(`A${rowCal+1}:J${rowCal+2}`);
+ calidad.getCell(`A${rowCal+1}`).value='Nota: esta hoja no contiene nombres. La numeración de colaboradores es estable dentro de cada sede.';
+ calidad.getCell(`A${rowCal+1}`).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFF5DB'}};
+ calidad.getCell(`A${rowCal+1}`).font={italic:true,color:{argb:'FF7A4D00'}};
+ calidad.getCell(`A${rowCal+1}`).alignment={wrapText:true,vertical:'middle'};
+
+ const erroresSheet=wb.addWorksheet('Errores Preparación');
+ erroresSheet.addRow(['Fecha','Colaborador','Tipo de error','Cantidad','Zona / Gira','Tipo pedido','Facturas','Libras']);
+ (erroresPreparacion||[])
+  .slice()
+  .sort((a,b)=>String(a.fecha_preparacion).localeCompare(String(b.fecha_preparacion))||Number(a.numero_reporte)-Number(b.numero_reporte))
+  .forEach(e=>{
+   erroresSheet.addRow([
+    e.fecha_preparacion,
+    `Colaborador ${Number(e.numero_reporte||0)}`,
+    e.tipo_error||'',
+    Number(e.cantidad||0),
+    e.zona||'',
+    e.tipo_pedido||'',
+    Number(e.facturas||0),
+    redondear(e.libras||0)
+   ]);
+  });
+ estilosHojaDetalle(erroresSheet,[16,20,34,12,22,18,12,14]);
+
  return wb;
 }
 
-descargarExcelBtn.addEventListener('click',async()=>{const desde=reporteDesde.value,hasta=reporteHasta.value;if(!desde||!hasta)return alert('Seleccione la fecha inicial y final.');if(desde>hasta)return alert('La fecha inicial no puede ser mayor que la fecha final.');if(!navigator.onLine)return alert('Se necesita conexión para consultar la información de Supabase.');if(typeof ExcelJS==='undefined')return alert('No se pudo cargar el generador de Excel. Revise la conexión.');const original=descargarExcelBtn.textContent;descargarExcelBtn.disabled=true;descargarExcelBtn.textContent='Generando dashboard...';reporteMensaje.textContent=`Consultando ${SEDE_ACTUAL} del ${desde} al ${hasta} y construyendo el Excel...`;try{const [p,a,ausencias,colsReporte,participaciones,participacionesPrep]=await Promise.all([obtenerTodosRegistros('historial_preparaciones',desde,hasta),obtenerTodosRegistros('historial_actividades',desde,hasta),obtenerAusenciasPeriodo(desde,hasta),obtenerColaboradoresReporte(),obtenerParticipacionesPeriodo(desde,hasta),obtenerParticipacionesPreparacionPeriodo(desde,hasta)]);if(!p.length&&!a.length&&!ausencias.length){reporteMensaje.textContent='No se encontraron registros ni ausencias en el período seleccionado.';return}const libro=await construirReporte(p,a,ausencias,colsReporte,participaciones,desde,hasta),buffer=await libro.xlsx.writeBuffer();descargarBlob(new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),`Dashboard_Productividad_BIA_${SEDE_ACTUAL}_${desde}_al_${hasta}.xlsx`);reporteMensaje.textContent=`Excel ${SEDE_ACTUAL} generado para ${desde} al ${hasta}: ${p.length} preparaciones, ${a.length} actividades y ${ausencias.length} registros de ausencia.`}catch(err){console.error(err);reporteMensaje.textContent='No se pudo generar el reporte: '+err.message}finally{descargarExcelBtn.disabled=false;descargarExcelBtn.textContent=original}});
+descargarExcelBtn.addEventListener('click',async()=>{
+ const desde=reporteDesde.value,hasta=reporteHasta.value;
+ if(!desde||!hasta)return alert('Seleccione la fecha inicial y final.');
+ if(desde>hasta)return alert('La fecha inicial no puede ser mayor que la fecha final.');
+ if(!navigator.onLine)return alert('Se necesita conexión para consultar la información de Supabase.');
+ if(typeof ExcelJS==='undefined')return alert('No se pudo cargar el generador de Excel. Revise la conexión.');
 
-supabase.channel('cronometros-operacion-v300').on('postgres_changes',{event:'*',schema:'public',table:'cronometros'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'historial_preparaciones'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'historial_actividades'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'colaboradores'},()=>{cargarTodo();if(esAdmin)cargarAdmin()}).on('postgres_changes',{event:'*',schema:'public',table:'actividades_catalogo'},()=>{cargarCatalogoActividades().then(()=>cargarTodo());if(esAdmin)cargarAdmin()}).on('postgres_changes',{event:'*',schema:'public',table:'ausencias_personal'},()=>{if(esAdmin)cargarAusenciasAdmin();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'metas_productividad'},()=>{cargarMetas();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'pausas_cronometros'},()=>{if(esAdmin)cargarAuditoria('pausas')}).on('postgres_changes',{event:'*',schema:'public',table:'cierres_diarios'},()=>{cargarEstadoCierre();if(esAdmin)cargarAuditoria('cierres')}).on('postgres_changes',{event:'*',schema:'public',table:'actividad_participaciones'},()=>{cargarTodo();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'preparacion_participaciones'},()=>{cargarTodo();actualizarDashboard()}).subscribe();
+ const original=descargarExcelBtn.textContent;
+ descargarExcelBtn.disabled=true;
+ descargarExcelBtn.textContent='Generando dashboard...';
+ reporteMensaje.textContent=`Consultando ${SEDE_ACTUAL} del ${desde} al ${hasta} y construyendo el Excel...`;
+
+ try{
+  const [p,a,ausencias,colsReporte,participaciones,participacionesPrep,erroresPrep]=await Promise.all([
+   obtenerTodosRegistros('historial_preparaciones',desde,hasta),
+   obtenerTodosRegistros('historial_actividades',desde,hasta),
+   obtenerAusenciasPeriodo(desde,hasta),
+   obtenerColaboradoresReporte(),
+   obtenerParticipacionesPeriodo(desde,hasta),
+   obtenerParticipacionesPreparacionPeriodo(desde,hasta),
+   obtenerErroresPreparacionPeriodo(desde,hasta)
+  ]);
+
+  if(!p.length&&!a.length&&!ausencias.length&&!erroresPrep.length){
+   reporteMensaje.textContent='No se encontraron registros, ausencias ni errores en el período seleccionado.';
+   return;
+  }
+
+  const libro=await construirReporte(
+   p,a,ausencias,colsReporte,participaciones,participacionesPrep,erroresPrep,desde,hasta
+  );
+  const buffer=await libro.xlsx.writeBuffer();
+
+  descargarBlob(
+   new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),
+   `Dashboard_Productividad_BIA_${SEDE_ACTUAL}_${desde}_al_${hasta}.xlsx`
+  );
+
+  const erroresUnicos=new Set(erroresPrep.map(x=>x.error_id)).size;
+  reporteMensaje.textContent=`Excel ${SEDE_ACTUAL} generado para ${desde} al ${hasta}: ${p.length} preparaciones, ${a.length} actividades, ${ausencias.length} ausencias y ${erroresUnicos} registros de error.`;
+ }catch(err){
+  console.error(err);
+  reporteMensaje.textContent='No se pudo generar el reporte: '+err.message;
+ }finally{
+  descargarExcelBtn.disabled=false;
+  descargarExcelBtn.textContent=original;
+ }
+});
+
+supabase.channel('cronometros-operacion-v302').on('postgres_changes',{event:'*',schema:'public',table:'cronometros'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'historial_preparaciones'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'historial_actividades'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'colaboradores'},()=>{cargarTodo();if(esAdmin)cargarAdmin()}).on('postgres_changes',{event:'*',schema:'public',table:'actividades_catalogo'},()=>{cargarCatalogoActividades().then(()=>cargarTodo());if(esAdmin)cargarAdmin()}).on('postgres_changes',{event:'*',schema:'public',table:'ausencias_personal'},()=>{if(esAdmin)cargarAusenciasAdmin();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'metas_productividad'},()=>{cargarMetas();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'pausas_cronometros'},()=>{if(esAdmin)cargarAuditoria('pausas')}).on('postgres_changes',{event:'*',schema:'public',table:'cierres_diarios'},()=>{cargarEstadoCierre();if(esAdmin)cargarAuditoria('cierres')}).on('postgres_changes',{event:'*',schema:'public',table:'actividad_participaciones'},()=>{cargarTodo();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'preparacion_participaciones'},()=>{cargarTodo();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'errores_preparacion'},()=>{if(prepErrorContext)cargarErroresPreparacionExistentes()}).subscribe();
 try{await cargarMetas();await cargarTodo();await actualizarDashboard();if(esAdmin)await cargarAuditoria()}catch(e){document.getElementById('conexion').textContent='No se pudo cargar la información: '+e.message}
