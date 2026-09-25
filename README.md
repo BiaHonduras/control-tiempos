@@ -1,3 +1,12 @@
+BIA HONDURAS · PWA v3.1.1
+
+CORRECCIÓN DE DISTRIBUCIÓN EN ESCRITORIO
+
+- El panel secundario ya no crea columnas invisibles ni comprime tarjetas.
+- Preparación y Actividades ocupan dos columnas equilibradas.
+- Excel, Metas, Cierre diario y Resumen del día se muestran en una banda completa inferior.
+- Se elimina el espacio vacío excesivo y ninguna tarjeta queda oculta.
+
 BIA HONDURAS · PWA v3.1.0
 
 ACTUALIZACIÓN VISUAL / DISEÑO RESPONSIVO

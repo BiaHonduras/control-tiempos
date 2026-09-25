@@ -1,6 +1,6 @@
 /*
  * BIA Honduras · Control de Tiempos
- * Capa visual responsiva v3.1.0
+ * Capa visual responsiva v3.1.1
  * Mantiene intacta la lógica operativa y normaliza el diseño de SPS, CBA y SRC.
  */
 
@@ -259,15 +259,17 @@ body {
 }
 
 /*
- * Operación: una fila de tres columnas cuando no hay procesos activos.
- * Si hay procesos, estos ocupan una fila completa y no desplazan los formularios.
+ * Operación: los dos formularios comparten la fila principal.
+ * Los controles secundarios ocupan una banda completa para evitar columnas
+ * implícitas, tarjetas comprimidas y grandes espacios vacíos en escritorio.
  */
 .operations-grid {
   display: grid !important;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(310px, .68fr) !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   grid-template-areas:
-    "active active active"
-    "prep activity rail" !important;
+    "active active"
+    "prep activity"
+    "rail rail" !important;
   align-items: start !important;
   gap: 16px !important;
   width: 100%;
@@ -299,6 +301,12 @@ body {
   height: auto !important;
   min-height: 0 !important;
   align-self: start !important;
+}
+
+.operations-grid > #prepOperationSection,
+.operations-grid > #activityOperationSection {
+  align-self: stretch !important;
+  height: 100% !important;
 }
 
 #prepOperationSection,
@@ -368,7 +376,8 @@ textarea {
 
 .side-rail {
   display: grid !important;
-  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  grid-auto-flow: row !important;
   gap: 12px !important;
   align-content: start !important;
 }
@@ -378,6 +387,21 @@ textarea {
   min-width: 0;
   margin: 0 !important;
   padding: 16px !important;
+}
+
+/*
+ * Las versiones anteriores asignaban estos paneles a la columna 3.
+ * Al estar ahora dentro de .side-rail, esa regla generaba columnas fantasma
+ * y comprimía Resumen del día. El selector con ID garantiza el reinicio.
+ */
+.side-rail > #reportesExcel,
+.side-rail > #metasAdminSection,
+.side-rail > #cierreAdminSection,
+.side-rail > #dailySummaryCard {
+  grid-column: auto !important;
+  grid-row: auto !important;
+  width: 100% !important;
+  min-width: 0 !important;
 }
 
 .side-rail .section-head h2 {
@@ -522,14 +546,6 @@ textarea {
 
   .dashboard-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-  }
-
-  .operations-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    grid-template-areas:
-      "active active"
-      "prep activity"
-      "rail rail" !important;
   }
 
   .side-rail {
