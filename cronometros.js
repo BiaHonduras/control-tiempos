@@ -1494,7 +1494,7 @@ async function obtenerColaboradoresReporte(){
 
 
 async function obtenerErroresPreparacionPeriodo(desde,hasta){
- const data=await rpc('reporte_errores_preparacion_sede_v1',{
+ const data=await rpc('reporte_errores_preparacion_sede_v2',{
   p_desde:desde,
   p_hasta:hasta
  });
@@ -1539,6 +1539,88 @@ function dibujarTendencia(datos,titulo,ancho=1000,alto=430){
  const c=document.createElement('canvas');c.width=ancho;c.height=alto;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,ancho,alto);x.fillStyle='#0b2a55';x.font='bold 25px Arial';x.fillText(titulo,34,42);x.fillStyle='#667085';x.font='14px Arial';x.fillText('Facturas preparadas por día',34,67);
  const top=96,left=75,right=35,bottom=62,w=ancho-left-right,h=alto-top-bottom,max=Math.max(1,...datos.map(d=>d.valor));x.strokeStyle='#dbe5f0';for(let i=0;i<=5;i++){const y=top+h-h*i/5;x.beginPath();x.moveTo(left,y);x.lineTo(left+w,y);x.stroke();x.fillStyle='#7a8699';x.font='12px Arial';x.fillText(Math.round(max*i/5),25,y+4)}
  if(datos.length){x.strokeStyle='#1264d8';x.lineWidth=4;x.beginPath();datos.forEach((d,i)=>{const px=left+(datos.length===1?w/2:w*i/(datos.length-1)),py=top+h-h*d.valor/max;i?x.lineTo(px,py):x.moveTo(px,py)});x.stroke();datos.forEach((d,i)=>{const px=left+(datos.length===1?w/2:w*i/(datos.length-1)),py=top+h-h*d.valor/max;x.fillStyle='#1264d8';x.beginPath();x.arc(px,py,5,0,Math.PI*2);x.fill();if(i%Math.ceil(datos.length/9)===0||i===datos.length-1){x.save();x.translate(px,top+h+20);x.rotate(-.45);x.fillStyle='#667085';x.font='12px Arial';x.fillText(d.nombre,0,0);x.restore()}})}return c.toDataURL('image/png').split(',')[1]
+}
+
+
+// ===== GRÁFICOS NATIVOS DE EXCEL v3.0.6 =====
+// ExcelJS no crea gráficos. Generamos el libro con ExcelJS y luego añadimos
+// las partes OOXML de gráficos con JSZip. El resultado son gráficos editables
+// y vinculados a rangos reales dentro del propio archivo Excel.
+function excelXmlEsc(v){return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;')}
+function excelCol(n){let s='';while(n>0){n--;s=String.fromCharCode(65+n%26)+s;n=Math.floor(n/26)}return s}
+function excelRef(hoja,col,row1,row2){return `'${String(hoja).replace(/'/g,"''")}'!$${excelCol(col)}$${row1}:$${excelCol(col)}$${row2}`}
+function ejeMaxBonito(valor,minimo=1){const v=Math.max(minimo,Number(valor)||0);const potencia=Math.pow(10,Math.floor(Math.log10(v)));const normal=v/potencia;let paso;if(normal<=1)paso=.2;else if(normal<=2)paso=.5;else if(normal<=5)paso=1;else paso=2;return Math.ceil(normal/paso)*paso*potencia}
+function tituloGraficoExcel(titulo,subtitulo=''){
+ const sub=subtitulo?`<a:br/><a:r><a:rPr lang="es-HN" sz="900"><a:solidFill><a:srgbClr val="667085"/></a:solidFill></a:rPr><a:t>${excelXmlEsc(subtitulo)}</a:t></a:r>`:'';
+ return `<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="es-HN" sz="1500" b="1"><a:solidFill><a:srgbClr val="0B2A55"/></a:solidFill></a:rPr><a:t>${excelXmlEsc(titulo)}</a:t></a:r>${sub}</a:p></c:rich></c:tx><c:layout/><c:overlay val="0"/></c:title>`;
+}
+function estiloSerieAzul(){return `<c:spPr><a:solidFill><a:srgbClr val="2F75B5"/></a:solidFill><a:ln><a:noFill/></a:ln></c:spPr>`}
+function strCacheExcel(valores){const a=(valores||[]).map(v=>String(v??''));return `<c:strCache><c:ptCount val="${a.length}"/>${a.map((v,i)=>`<c:pt idx="${i}"><c:v>${excelXmlEsc(v)}</c:v></c:pt>`).join('')}</c:strCache>`}
+function numCacheExcel(valores,formato='General'){const a=(valores||[]).map(v=>Number(v)||0);return `<c:numCache><c:formatCode>${excelXmlEsc(formato)}</c:formatCode><c:ptCount val="${a.length}"/>${a.map((v,i)=>`<c:pt idx="${i}"><c:v>${v}</c:v></c:pt>`).join('')}</c:numCache>`}
+function graficoBarraXml({titulo,subtitulo,categoriaFormula,valorFormula,categorias=[],valores=[],serie='Valor',porcentaje=false,maximo=null,axisBase=501000}){
+ const cat=axisBase+1,val=axisBase+2;
+ const maxXml=maximo==null?'':`<c:max val="${Number(maximo)}"/>`;
+ const numFmt=porcentaje?'0.0&quot;%&quot;':'0.00';
+ const axisFmt=porcentaje?'0&quot;%&quot;':'0.00';
+ return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><c:lang val="es-HN"/><c:roundedCorners val="0"/><c:style val="10"/><c:chart>${tituloGraficoExcel(titulo,subtitulo)}<c:plotArea><c:layout/><c:barChart><c:barDir val="bar"/><c:grouping val="clustered"/><c:varyColors val="0"/><c:ser><c:idx val="0"/><c:order val="0"/><c:tx><c:v>${excelXmlEsc(serie)}</c:v></c:tx>${estiloSerieAzul()}<c:cat><c:strRef><c:f>${excelXmlEsc(categoriaFormula)}</c:f>${strCacheExcel(categorias)}</c:strRef></c:cat><c:val><c:numRef><c:f>${excelXmlEsc(valorFormula)}</c:f>${numCacheExcel(valores,porcentaje?'0.00\"%\"':'0.00')}</c:numRef></c:val></c:ser><c:dLbls><c:numFmt formatCode="${numFmt}" sourceLinked="0"/><c:showLegendKey val="0"/><c:showVal val="1"/><c:showCatName val="0"/><c:showSerName val="0"/><c:showPercent val="0"/><c:showLeaderLines val="0"/></c:dLbls><c:gapWidth val="55"/><c:axId val="${cat}"/><c:axId val="${val}"/></c:barChart><c:catAx><c:axId val="${cat}"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="l"/><c:numFmt formatCode="General" sourceLinked="1"/><c:majorTickMark val="none"/><c:minorTickMark val="none"/><c:tickLblPos val="nextTo"/><c:spPr><a:ln><a:noFill/></a:ln></c:spPr><c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz="900"><a:solidFill><a:srgbClr val="173B63"/></a:solidFill></a:defRPr></a:pPr></a:p></c:txPr><c:crossAx val="${val}"/><c:crosses val="autoZero"/><c:auto val="1"/><c:lblAlgn val="ctr"/><c:lblOffset val="100"/><c:noMultiLvlLbl val="0"/></c:catAx><c:valAx><c:axId val="${val}"/><c:scaling><c:min val="0"/>${maxXml}<c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="b"/><c:majorGridlines><c:spPr><a:ln w="9525"><a:solidFill><a:srgbClr val="DCE6F1"/></a:solidFill></a:ln></c:spPr></c:majorGridlines><c:numFmt formatCode="${axisFmt}" sourceLinked="0"/><c:majorTickMark val="none"/><c:minorTickMark val="none"/><c:tickLblPos val="nextTo"/><c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz="850"><a:solidFill><a:srgbClr val="667085"/></a:solidFill></a:defRPr></a:pPr></a:p></c:txPr><c:crossAx val="${cat}"/><c:crosses val="autoZero"/><c:crossBetween val="between"/></c:valAx></c:plotArea><c:plotVisOnly val="1"/><c:dispBlanksAs val="zero"/><c:showDLblsOverMax val="0"/></c:chart><c:spPr><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:ln><a:solidFill><a:srgbClr val="D9E2EC"/></a:solidFill></a:ln></c:spPr></c:chartSpace>`;
+}
+function graficoLineaXml({titulo,subtitulo,categoriaFormula,valorFormula,categorias=[],valores=[],serie='Facturas',maximo=null,axisBase=502000}){
+ const cat=axisBase+1,val=axisBase+2,maxXml=maximo==null?'':`<c:max val="${Number(maximo)}"/>`;
+ return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><c:lang val="es-HN"/><c:roundedCorners val="0"/><c:style val="10"/><c:chart>${tituloGraficoExcel(titulo,subtitulo)}<c:plotArea><c:layout/><c:lineChart><c:grouping val="standard"/><c:varyColors val="0"/><c:ser><c:idx val="0"/><c:order val="0"/><c:tx><c:v>${excelXmlEsc(serie)}</c:v></c:tx><c:spPr><a:ln w="28575"><a:solidFill><a:srgbClr val="2F75B5"/></a:solidFill></a:ln></c:spPr><c:marker><c:symbol val="circle"/><c:size val="5"/><c:spPr><a:solidFill><a:srgbClr val="2F75B5"/></a:solidFill><a:ln><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill></a:ln></c:spPr></c:marker><c:cat><c:strRef><c:f>${excelXmlEsc(categoriaFormula)}</c:f>${strCacheExcel(categorias)}</c:strRef></c:cat><c:val><c:numRef><c:f>${excelXmlEsc(valorFormula)}</c:f>${numCacheExcel(valores,'0')}</c:numRef></c:val><c:smooth val="0"/></c:ser><c:axId val="${cat}"/><c:axId val="${val}"/></c:lineChart><c:catAx><c:axId val="${cat}"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="b"/><c:numFmt formatCode="General" sourceLinked="1"/><c:majorTickMark val="none"/><c:minorTickMark val="none"/><c:tickLblPos val="nextTo"/><c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz="800"><a:solidFill><a:srgbClr val="667085"/></a:solidFill></a:defRPr></a:pPr></a:p></c:txPr><c:crossAx val="${val}"/><c:crosses val="autoZero"/><c:auto val="1"/><c:lblAlgn val="ctr"/><c:lblOffset val="100"/><c:noMultiLvlLbl val="0"/></c:catAx><c:valAx><c:axId val="${val}"/><c:scaling><c:min val="0"/>${maxXml}<c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="l"/><c:majorGridlines><c:spPr><a:ln w="9525"><a:solidFill><a:srgbClr val="DCE6F1"/></a:solidFill></a:ln></c:spPr></c:majorGridlines><c:numFmt formatCode="0" sourceLinked="0"/><c:majorTickMark val="none"/><c:minorTickMark val="none"/><c:tickLblPos val="nextTo"/><c:crossAx val="${cat}"/><c:crosses val="autoZero"/><c:crossBetween val="between"/></c:valAx></c:plotArea><c:legend><c:legendPos val="b"/><c:overlay val="0"/></c:legend><c:plotVisOnly val="1"/><c:dispBlanksAs val="zero"/></c:chart><c:spPr><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:ln><a:solidFill><a:srgbClr val="D9E2EC"/></a:solidFill></a:ln></c:spPr></c:chartSpace>`;
+}
+function graficoDonaXml({titulo,subtitulo,categoriaFormula,valorFormula,categorias=[],valores=[],serie='Horas-hombre'}){
+ return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><c:lang val="es-HN"/><c:roundedCorners val="0"/><c:style val="10"/><c:chart>${tituloGraficoExcel(titulo,subtitulo)}<c:plotArea><c:layout/><c:doughnutChart><c:varyColors val="1"/><c:ser><c:idx val="0"/><c:order val="0"/><c:tx><c:v>${excelXmlEsc(serie)}</c:v></c:tx><c:cat><c:strRef><c:f>${excelXmlEsc(categoriaFormula)}</c:f>${strCacheExcel(categorias)}</c:strRef></c:cat><c:val><c:numRef><c:f>${excelXmlEsc(valorFormula)}</c:f>${numCacheExcel(valores,'0.00')}</c:numRef></c:val></c:ser><c:dLbls><c:numFmt formatCode="0.0%" sourceLinked="0"/><c:showLegendKey val="0"/><c:showVal val="0"/><c:showCatName val="0"/><c:showSerName val="0"/><c:showPercent val="1"/><c:showLeaderLines val="1"/></c:dLbls><c:firstSliceAng val="270"/><c:holeSize val="55"/></c:doughnutChart></c:plotArea><c:legend><c:legendPos val="r"/><c:overlay val="0"/></c:legend><c:plotVisOnly val="1"/></c:chart><c:spPr><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:ln><a:solidFill><a:srgbClr val="D9E2EC"/></a:solidFill></a:ln></c:spPr></c:chartSpace>`;
+}
+function resolverRutaZip(base,ruta){if(ruta.startsWith('/'))return ruta.slice(1);const partes=base.split('/');partes.pop();for(const p of ruta.split('/')){if(!p||p==='.')continue;if(p==='..')partes.pop();else partes.push(p)}return partes.join('/')}
+function relsDeRuta(path){const partes=path.split('/'),archivo=partes.pop();return [...partes,'_rels',archivo+'.rels'].join('/')}
+function regexEsc(v){return String(v).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}
+function targetRelacion(xml,id){const tag=xml?.match(new RegExp(`<Relationship\\b(?=[^>]*\\bId=\"${regexEsc(id)}\")[^>]*/?>`,'i'))?.[0];return tag?.match(/Target=\"([^\"]+)\"/i)?.[1]||null}
+function agregarOverrideTipoContenido(xml,partName,contentType){if(xml.includes(`PartName="${partName}"`))return xml;return xml.replace('</Types>',`<Override PartName="${partName}" ContentType="${contentType}"/></Types>`)}
+function anclaGraficoExcel(relId,id,nombre,desdeCol,desdeFila,hastaCol,hastaFila){return `<xdr:twoCellAnchor><xdr:from><xdr:col>${desdeCol}</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>${desdeFila}</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:from><xdr:to><xdr:col>${hastaCol}</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>${hastaFila}</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:to><xdr:graphicFrame macro=""><xdr:nvGraphicFramePr><xdr:cNvPr id="${id}" name="${excelXmlEsc(nombre)}"/><xdr:cNvGraphicFramePr/></xdr:nvGraphicFramePr><xdr:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/></xdr:xfrm><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/chart"><c:chart xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:id="${relId}"/></a:graphicData></a:graphic></xdr:graphicFrame><xdr:clientData/></xdr:twoCellAnchor>`}
+async function inyectarGraficosExcelReales(buffer,graficos){
+ if(typeof JSZip==='undefined')throw new Error('No se cargó el componente para crear gráficos nativos de Excel.');
+ if(!graficos?.length)return buffer;
+ const zip=await JSZip.loadAsync(buffer);
+ const wbXml=await zip.file('xl/workbook.xml').async('string');
+ const relWbXml=await zip.file('xl/_rels/workbook.xml.rels').async('string');
+ const sheetMatch=wbXml.match(/<(?:[A-Za-z0-9_]+:)?sheet\b[^>]*name="Dashboard Ejecutivo"[^>]*(?:r:id|id)="([^"]+)"[^>]*\/?\s*>/i);
+ if(!sheetMatch)throw new Error('No se encontró la hoja Dashboard Ejecutivo dentro del Excel.');
+ const wbRelId=sheetMatch[1];
+ const sheetTarget=targetRelacion(relWbXml,wbRelId);
+ if(!sheetTarget)throw new Error('No se encontró la relación de Dashboard Ejecutivo.');
+ let sheetPath=sheetTarget.replace(/^\//,'');if(!sheetPath.startsWith('xl/'))sheetPath='xl/'+sheetPath;
+ let sheetXml=await zip.file(sheetPath).async('string');
+ const sheetRelsPath=relsDeRuta(sheetPath);
+ let sheetRelsFile=zip.file(sheetRelsPath),sheetRelsXml=sheetRelsFile?await sheetRelsFile.async('string'):null;
+ let drawingPath=null,drawingRelId=null;
+ const drawingTag=sheetXml.match(/<(?:[A-Za-z0-9_]+:)?drawing\b[^>]*(?:r:id|id)="([^"]+)"[^>]*\/?\s*>/i);
+ if(drawingTag&&sheetRelsXml){drawingRelId=drawingTag[1];const drTarget=targetRelacion(sheetRelsXml,drawingRelId);if(drTarget)drawingPath=resolverRutaZip(sheetPath,drTarget)}
+ if(!drawingPath){
+  drawingPath='xl/drawings/drawing99.xml';drawingRelId='rIdBiaDashboardCharts';
+  if(!sheetRelsXml)sheetRelsXml='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>';
+  sheetRelsXml=sheetRelsXml.replace('</Relationships>',`<Relationship Id="${drawingRelId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing99.xml"/></Relationships>`);
+  const wsRoot=sheetXml.match(/<([A-Za-z0-9_]+:)?worksheet\b/i),wsPrefix=wsRoot?.[1]||'';
+  if(!/xmlns:r=/.test(sheetXml))sheetXml=sheetXml.replace(/<([A-Za-z0-9_]+:)?worksheet\b/i,m=>m+' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"');
+  sheetXml=sheetXml.replace(new RegExp(`</${wsPrefix}worksheet>`,'i'),`<${wsPrefix}drawing r:id="${drawingRelId}"/></${wsPrefix}worksheet>`);
+  zip.file(sheetPath,sheetXml);zip.file(sheetRelsPath,sheetRelsXml);
+  zip.file(drawingPath,'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"></xdr:wsDr>');
+ }
+ let drawingXml=await zip.file(drawingPath).async('string');
+ const drawingRelsPath=relsDeRuta(drawingPath);
+ let drawingRelsFile=zip.file(drawingRelsPath),drawingRelsXml=drawingRelsFile?await drawingRelsFile.async('string'):'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>';
+ const ids=[...drawingXml.matchAll(/<xdr:cNvPr[^>]*id="(\d+)"/g)].map(m=>Number(m[1]));let nextId=(ids.length?Math.max(...ids):0)+1;
+ let tipos=await zip.file('[Content_Types].xml').async('string');
+ graficos.forEach((g,i)=>{
+  const chartNum=90+i+1,chartPath=`xl/charts/chart${chartNum}.xml`,relId=`rIdBiaChart${i+1}`;
+  zip.file(chartPath,g.xml);
+  drawingRelsXml=drawingRelsXml.replace('</Relationships>',`<Relationship Id="${relId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart" Target="../charts/chart${chartNum}.xml"/></Relationships>`);
+  drawingXml=drawingXml.replace('</xdr:wsDr>',`${anclaGraficoExcel(relId,nextId++,g.nombre,g.fromCol,g.fromRow,g.toCol,g.toRow)}</xdr:wsDr>`);
+  tipos=agregarOverrideTipoContenido(tipos,`/xl/charts/chart${chartNum}.xml`,'application/vnd.openxmlformats-officedocument.drawingml.chart+xml');
+ });
+ tipos=agregarOverrideTipoContenido(tipos,'/'+drawingPath,'application/vnd.openxmlformats-officedocument.drawing+xml');
+ zip.file(drawingPath,drawingXml);zip.file(drawingRelsPath,drawingRelsXml);zip.file('[Content_Types].xml',tipos);
+ return await zip.generateAsync({type:'arraybuffer',compression:'DEFLATE',compressionOptions:{level:6}});
 }
 
 function estilosHojaDetalle(ws,anchos){ws.views=[{state:'frozen',ySplit:1}];ws.autoFilter={from:'A1',to:{row:1,column:anchos.length}};ws.columns=anchos.map((w,i)=>({key:`c${i}`,width:w}));const h=ws.getRow(1);h.height=28;h.eachCell(c=>{c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF0B2A55'}};c.font={bold:true,color:{argb:'FFFFFFFF'}};c.alignment={vertical:'middle',horizontal:'center',wrapText:true}});ws.eachRow((row,n)=>{if(n>1){row.height=22;row.eachCell(c=>{c.alignment={vertical:'middle',wrapText:true};c.border={bottom:{style:'hair',color:{argb:'FFD9E2EC'}}}})}})}
@@ -1596,7 +1678,7 @@ async function construirReporte(preparaciones,actividades,ausencias,colaboradore
  }).sort((a,b)=>b.productividadPct-a.productividadPct);
 
  const listaAct=[...porActividad.values()].sort((a,b)=>b.horasHombre-a.horasHombre);
- const listaDias=[...porDia.entries()].sort().map(([nombre,valor])=>({nombre,valor}));
+ const listaDias=[];for(let d=new Date(`${desde}T12:00:00`),fin=new Date(`${hasta}T12:00:00`);d<=fin;d.setDate(d.getDate()+1)){const nombre=d.toISOString().slice(0,10);listaDias.push({nombre,valor:porDia.get(nombre)||0})}
  const totalFacturas=preparaciones.reduce((s,r)=>s+Number(r.facturas||0),0);
  const totalLibras=preparaciones.reduce((s,r)=>s+Number(r.libras||0),0);
  const segundosPrep=preparaciones.reduce((s,r)=>s+Number(r.segundos||0),0);
@@ -1667,37 +1749,35 @@ async function construirReporte(preparaciones,actividades,ausencias,colaboradore
   dash.addImage(id,{tl:{col:.15,row:.15},ext:{width:125,height:55}});
  }
 
- const chart1=wb.addImage({
-  base64:dibujarBarras(
-   listaPersonas.slice(0,8).map(p=>({nombre:p.nombre,valor:p.productividadPct})),
-   'Productividad por colaborador',
-   '% de horas productivas sobre horas disponibles'
-  ),extension:'png'
- });
- dash.addImage(chart1,{tl:{col:.2,row:12},ext:{width:650,height:280}});
-
- const chart2=wb.addImage({
-  base64:dibujarDona(
-   listaAct.slice(0,8).map(a=>({nombre:a.nombre,valor:a.horasHombre})),
-   'Distribución de horas-hombre'
-  ),extension:'png'
- });
- dash.addImage(chart2,{tl:{col:7.2,row:12},ext:{width:590,height:280}});
-
- const chart3=wb.addImage({
-  base64:dibujarTendencia(listaDias,'Tendencia diaria de preparación'),
-  extension:'png'
- });
- dash.addImage(chart3,{tl:{col:.2,row:28},ext:{width:650,height:280}});
-
- const chart4=wb.addImage({
-  base64:dibujarBarras(
-   listaPersonas.slice(0,8).map(p=>({nombre:p.nombre,valor:p.horasAusencia})),
-   'Ausencias por colaborador',
-   'Horas descontadas de la jornada laboral'
-  ),extension:'png'
- });
- dash.addImage(chart4,{tl:{col:7.2,row:28},ext:{width:590,height:280}});
+ const datosGraf=wb.addWorksheet('Datos Dashboard');
+ datosGraf.state='veryHidden';
+ datosGraf.addRow(['Colaborador','Productividad %','','Actividad','Horas-hombre','','Fecha','Facturas','','Colaborador','Horas ausencia']);
+ const topProd=(listaPersonas.length?listaPersonas:[{nombre:'Sin datos',productividadPct:0}]).slice(0,10);
+ const prodGraf=topProd;
+ const topAct=(listaAct.length?listaAct:[{nombre:'Sin datos',horasHombre:0}]).slice(0,10);
+ const diasGraf=listaDias.length?listaDias:[{nombre:desde,valor:0}];
+ const topAus=(listaPersonas.slice().sort((a,b)=>b.horasAusencia-a.horasAusencia).filter(p=>p.horasAusencia>0).slice(0,10));
+ const ausGraf=topAus.length?topAus:[{nombre:'Sin ausencias',horasAusencia:0}];
+ const maxRows=Math.max(prodGraf.length,topAct.length,diasGraf.length,ausGraf.length);
+ for(let i=0;i<maxRows;i++)datosGraf.addRow([
+  prodGraf[i]?.nombre??'',prodGraf[i]?.productividadPct??null,'',
+  topAct[i]?.nombre??'',topAct[i]?.horasHombre??null,'',
+  diasGraf[i]?.nombre??'',diasGraf[i]?.valor??null,'',
+  ausGraf[i]?.nombre??'',ausGraf[i]?.horasAusencia??null
+ ]);
+ datosGraf.getColumn(2).numFmt='0.00"%"';
+ datosGraf.getColumn(5).numFmt='0.00';
+ datosGraf.getColumn(8).numFmt='0';
+ datosGraf.getColumn(11).numFmt='0.00';
+ const hojaDatos='Datos Dashboard';
+ const maxFactDia=Math.max(0,...diasGraf.map(d=>Number(d.valor)||0));
+ const maxAus=Math.max(0,...ausGraf.map(d=>Number(d.horasAusencia)||0));
+ wb._biaGraficosExcel=[
+  {nombre:'Productividad por colaborador',fromCol:0,fromRow:11,toCol:7,toRow:26,xml:graficoBarraXml({titulo:'Productividad por colaborador',subtitulo:'% de horas productivas sobre horas disponibles',categoriaFormula:excelRef(hojaDatos,1,2,prodGraf.length+1),valorFormula:excelRef(hojaDatos,2,2,prodGraf.length+1),categorias:prodGraf.map(p=>p.nombre),valores:prodGraf.map(p=>p.productividadPct),serie:'Productividad %',porcentaje:true,maximo:100,axisBase:510000})},
+  {nombre:'Distribución de horas-hombre',fromCol:7,fromRow:11,toCol:14,toRow:26,xml:graficoDonaXml({titulo:'Distribución de horas-hombre',subtitulo:'Participación por actividad',categoriaFormula:excelRef(hojaDatos,4,2,topAct.length+1),valorFormula:excelRef(hojaDatos,5,2,topAct.length+1),categorias:topAct.map(a=>a.nombre),valores:topAct.map(a=>a.horasHombre),serie:'Horas-hombre'})},
+  {nombre:'Tendencia diaria de preparación',fromCol:0,fromRow:27,toCol:7,toRow:42,xml:graficoLineaXml({titulo:'Tendencia diaria de preparación',subtitulo:'Facturas preparadas por día',categoriaFormula:excelRef(hojaDatos,7,2,diasGraf.length+1),valorFormula:excelRef(hojaDatos,8,2,diasGraf.length+1),categorias:diasGraf.map(d=>d.nombre),valores:diasGraf.map(d=>d.valor),serie:'Facturas',maximo:ejeMaxBonito(maxFactDia*1.1,10),axisBase:520000})},
+  {nombre:'Ausencias por colaborador',fromCol:7,fromRow:27,toCol:14,toRow:42,xml:graficoBarraXml({titulo:'Ausencias por colaborador',subtitulo:'Horas descontadas de la jornada laboral',categoriaFormula:excelRef(hojaDatos,10,2,ausGraf.length+1),valorFormula:excelRef(hojaDatos,11,2,ausGraf.length+1),categorias:ausGraf.map(p=>p.nombre),valores:ausGraf.map(p=>p.horasAusencia),serie:'Horas ausencia',porcentaje:false,maximo:ejeMaxBonito(maxAus*1.1,1),axisBase:530000})}
+ ];
 
  dash.mergeCells('A44:N45');
  dash.getCell('A44').value='Metodología: productividad = horas productivas ÷ horas disponibles. Horas disponibles = jornada programada (L-V 8 h, sábado 4 h) menos ausencias registradas. En actividades compartidas, cada participante recibe el tiempo completo como horas-hombre.';
@@ -1852,7 +1932,7 @@ descargarExcelBtn.addEventListener('click',async()=>{
  if(!desde||!hasta)return alert('Seleccione la fecha inicial y final.');
  if(desde>hasta)return alert('La fecha inicial no puede ser mayor que la fecha final.');
  if(!navigator.onLine)return alert('Se necesita conexión para consultar la información de Supabase.');
- if(typeof ExcelJS==='undefined')return alert('No se pudo cargar el generador de Excel. Revise la conexión.');
+ if(typeof ExcelJS==='undefined')return alert('No se pudo cargar el generador de Excel. Revise la conexión.');if(typeof JSZip==='undefined')return alert('No se pudo cargar el componente de gráficos nativos de Excel. Actualice la página.');
 
  const original=descargarExcelBtn.textContent;
  descargarExcelBtn.disabled=true;
@@ -1878,7 +1958,8 @@ descargarExcelBtn.addEventListener('click',async()=>{
   const libro=await construirReporte(
    p,a,ausencias,colsReporte,participaciones,participacionesPrep,erroresPrep,desde,hasta
   );
-  const buffer=await libro.xlsx.writeBuffer();
+  let buffer=await libro.xlsx.writeBuffer();
+  buffer=await inyectarGraficosExcelReales(buffer,libro._biaGraficosExcel||[]);
 
   descargarBlob(
    new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),
@@ -1896,5 +1977,5 @@ descargarExcelBtn.addEventListener('click',async()=>{
  }
 });
 
-supabase.channel('cronometros-operacion-v302').on('postgres_changes',{event:'*',schema:'public',table:'cronometros'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'historial_preparaciones'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'historial_actividades'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'colaboradores'},()=>{cargarTodo();if(esAdmin)cargarAdmin()}).on('postgres_changes',{event:'*',schema:'public',table:'actividades_catalogo'},()=>{cargarCatalogoActividades().then(()=>cargarTodo());if(esAdmin)cargarAdmin()}).on('postgres_changes',{event:'*',schema:'public',table:'ausencias_personal'},()=>{if(esAdmin)cargarAusenciasAdmin();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'metas_productividad'},()=>{cargarMetas();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'pausas_cronometros'},()=>{if(esAdmin)cargarAuditoria('pausas')}).on('postgres_changes',{event:'*',schema:'public',table:'cierres_diarios'},()=>{cargarEstadoCierre();if(esAdmin)cargarAuditoria('cierres')}).on('postgres_changes',{event:'*',schema:'public',table:'actividad_participaciones'},()=>{cargarTodo();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'preparacion_participaciones'},()=>{cargarTodo();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'errores_preparacion'},()=>{if(prepErrorContext)cargarErroresPreparacionExistentes()}).subscribe();
+supabase.channel('cronometros-operacion-v306').on('postgres_changes',{event:'*',schema:'public',table:'cronometros'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'historial_preparaciones'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'historial_actividades'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'colaboradores'},()=>{cargarTodo();if(esAdmin)cargarAdmin()}).on('postgres_changes',{event:'*',schema:'public',table:'actividades_catalogo'},()=>{cargarCatalogoActividades().then(()=>cargarTodo());if(esAdmin)cargarAdmin()}).on('postgres_changes',{event:'*',schema:'public',table:'ausencias_personal'},()=>{if(esAdmin)cargarAusenciasAdmin();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'metas_productividad'},()=>{cargarMetas();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'pausas_cronometros'},()=>{if(esAdmin)cargarAuditoria('pausas')}).on('postgres_changes',{event:'*',schema:'public',table:'cierres_diarios'},()=>{cargarEstadoCierre();if(esAdmin)cargarAuditoria('cierres')}).on('postgres_changes',{event:'*',schema:'public',table:'actividad_participaciones'},()=>{cargarTodo();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'preparacion_participaciones'},()=>{cargarTodo();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'errores_preparacion'},()=>{if(prepErrorContext)cargarErroresPreparacionExistentes()}).subscribe();
 try{await cargarMetas();await cargarTodo();await actualizarDashboard();if(esAdmin)await cargarAuditoria()}catch(e){document.getElementById('conexion').textContent='No se pudo cargar la información: '+e.message}
