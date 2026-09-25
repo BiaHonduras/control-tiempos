@@ -1,9 +1,9 @@
-const CACHE_NAME='bia-control-v3.0.2';
+const CACHE_NAME='bia-control-v3.1.0';
 const APP_SHELL=[
   './','./index.html','./cronometros.html','./cba.html','./src.html','./cronometros.js','./supabase-config.js',
-  './pwa.js','./offline.html',
+  './pwa.js','./offline.html','./warehouse-ui.css',
   './assets/bia-honduras-logo.png','./manifest.webmanifest',
-  './icons/icon-192.png','./icons/icon-512.png','./icons/maskable-512.png'
+  './icons/warehouse.svg','./icons/warehouse-192.png','./icons/warehouse-512.png','./icons/warehouse-maskable-512.png'
 ];
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE_NAME).then(c=>c.addAll(APP_SHELL)).then(()=>self.skipWaiting()));

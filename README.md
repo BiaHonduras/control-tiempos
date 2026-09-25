@@ -1,3 +1,14 @@
+BIA HONDURAS · PWA v3.1.0
+
+ACTUALIZACIÓN VISUAL / DISEÑO RESPONSIVO
+
+- Retícula equilibrada en escritorio: preparación, actividades y panel lateral usan todo el ancho disponible.
+- Los procesos activos ocupan una banda completa y ya no desordenan las columnas.
+- Vista adaptable de tres, dos o una columna según el ancho de pantalla.
+- Cabecera, indicadores, formularios, fechas y botones ya no se recortan.
+- Nuevo favicon e ícono instalable de bodega, en los colores corporativos de BIA Honduras.
+- La mejora aplica a SPS, CBA y SRC sin cambiar la lógica de Supabase ni los cronómetros.
+
 BIA HONDURAS · PWA v3.0.2
 MÓDULO DE CALIDAD / ERRORES DE PREPARACIÓN
 

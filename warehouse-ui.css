@@ -1,0 +1,719 @@
+/*
+ * BIA Honduras · Control de Tiempos
+ * Capa visual responsiva v3.1.0
+ * Mantiene intacta la lógica operativa y normaliza el diseño de SPS, CBA y SRC.
+ */
+
+:root {
+  --bia-navy-950: #041a3d;
+  --bia-navy-900: #062653;
+  --bia-navy-800: #0b356d;
+  --bia-blue-600: #246cf0;
+  --bia-blue-500: #4387f5;
+  --bia-blue-100: #eaf2ff;
+  --bia-ink: #172b49;
+  --bia-muted: #64748b;
+  --bia-line: #dce5f0;
+  --bia-canvas: #f3f6fb;
+  --bia-radius: 16px;
+  --bia-shadow: 0 8px 24px rgba(13, 43, 80, .07);
+  --bia-page-pad: clamp(14px, 1.8vw, 26px);
+}
+
+html {
+  background: var(--bia-canvas);
+}
+
+body {
+  min-width: 320px;
+  overflow-x: hidden;
+  color: var(--bia-ink);
+  background:
+    radial-gradient(circle at 8% 0, rgba(67, 135, 245, .08), transparent 26rem),
+    linear-gradient(180deg, #edf3fa 0, #f5f7fb 255px, #f5f7fb 100%) !important;
+}
+
+/* Cabecera: marca a la izquierda y acciones legibles a la derecha. */
+.app-header {
+  display: grid !important;
+  grid-template-columns: minmax(420px, 1fr) auto !important;
+  align-items: center !important;
+  gap: 20px !important;
+  min-height: 96px !important;
+  padding: 14px clamp(18px, 2.2vw, 34px) !important;
+  overflow: visible !important;
+  background:
+    radial-gradient(circle at 70% -120%, rgba(86, 151, 255, .42), transparent 33rem),
+    linear-gradient(112deg, var(--bia-navy-950), var(--bia-navy-900) 62%, #0c3b72) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, .1) !important;
+  box-shadow: 0 9px 28px rgba(4, 25, 59, .2) !important;
+}
+
+.app-header::before,
+.app-header::after {
+  display: none !important;
+}
+
+.app-header .brand-wrap,
+.app-header .user {
+  float: none !important;
+  width: auto !important;
+  min-width: 0;
+  padding: 0 !important;
+}
+
+.app-header .brand-wrap {
+  display: flex !important;
+  align-items: center !important;
+  gap: 18px !important;
+}
+
+.header-logo {
+  width: 162px !important;
+  max-width: 31vw;
+  padding: 7px 11px;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, .97);
+  filter: drop-shadow(0 6px 15px rgba(0, 0, 0, .17)) !important;
+}
+
+.brand-copy {
+  min-width: 0;
+  padding-left: 18px !important;
+  border-left: 1px solid rgba(255, 255, 255, .2) !important;
+}
+
+.brand-copy h1 {
+  font-size: clamp(19px, 1.55vw, 24px) !important;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.brand-copy div:last-of-type {
+  margin-top: 5px !important;
+  color: #dbe8fb !important;
+  font-size: 12px !important;
+}
+
+.page-area-badge {
+  margin-top: 7px;
+}
+
+.app-header .user {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  min-height: 0 !important;
+}
+
+.area-switcher {
+  flex: 0 0 auto;
+  margin: 0 4px 0 0 !important;
+  padding: 0 10px 0 0 !important;
+}
+
+.area-switcher a {
+  min-width: 50px;
+  min-height: 34px;
+  padding: 7px 10px;
+}
+
+.user-avatar {
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+}
+
+.user-email {
+  max-width: 150px;
+  color: #e7effc !important;
+}
+
+.app-header .user button,
+.app-header .install-btn {
+  flex: 0 0 auto;
+  min-height: 38px !important;
+  padding: 8px 12px !important;
+  white-space: nowrap;
+}
+
+/* Ancho común: elimina el vacío lateral que aparecía en escritorio. */
+.container {
+  display: block !important;
+  width: 100%;
+  max-width: 1640px !important;
+  margin: 0 auto !important;
+  padding: 0 var(--bia-page-pad) 76px !important;
+}
+
+.section-nav {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 780;
+  width: auto;
+  min-height: 54px !important;
+  margin: 0 calc(0px - var(--bia-page-pad)) 16px !important;
+  padding: 0 clamp(14px, 2.2vw, 32px) !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: linear-gradient(180deg, #062653, #052049) !important;
+  box-shadow: 0 7px 18px rgba(5, 31, 72, .12) !important;
+}
+
+.section-nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 54px;
+  padding: 0 15px !important;
+  font-size: 12px !important;
+  border-bottom: 3px solid transparent;
+}
+
+.section-nav a:hover,
+.section-nav a:focus-visible {
+  border-bottom-color: #5b96ff !important;
+  background: rgba(255, 255, 255, .05) !important;
+}
+
+.card {
+  min-width: 0;
+  border: 1px solid var(--bia-line) !important;
+  border-radius: var(--bia-radius) !important;
+  background: rgba(255, 255, 255, .98) !important;
+  box-shadow: var(--bia-shadow) !important;
+}
+
+.card::before {
+  display: none !important;
+}
+
+/* Indicadores: misma altura y distribución fluida. */
+#dashboardApp {
+  margin: 0 0 16px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.dashboard-grid {
+  display: grid !important;
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+}
+
+.dash-kpi {
+  display: grid !important;
+  grid-template-columns: 46px minmax(0, 1fr) !important;
+  grid-template-areas: "icon label" "icon value" "sub sub" !important;
+  align-items: center !important;
+  min-width: 0;
+  min-height: 116px !important;
+  padding: 15px !important;
+  border: 1px solid #dfe7f1 !important;
+  border-radius: 14px !important;
+  background: linear-gradient(155deg, #fff 55%, #f5f9ff) !important;
+  box-shadow: 0 5px 15px rgba(15, 48, 88, .055) !important;
+}
+
+.dash-kpi::after {
+  width: 88px;
+  height: 88px;
+  right: -44px;
+  top: -44px;
+}
+
+.dash-kpi .kpi-glyph {
+  grid-area: icon;
+  width: 42px !important;
+  height: 42px !important;
+  margin: 0 !important;
+  font-size: 18px !important;
+}
+
+.dash-kpi .label {
+  grid-area: label;
+  min-width: 0;
+  font-size: 9px !important;
+  line-height: 1.2 !important;
+  overflow-wrap: anywhere;
+}
+
+.dash-kpi .value {
+  grid-area: value;
+  min-width: 0;
+  margin-top: 2px !important;
+  font-size: clamp(21px, 1.65vw, 27px) !important;
+  line-height: 1 !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.dash-kpi .sub {
+  grid-area: sub;
+  min-width: 0;
+  margin-top: 11px !important;
+  font-size: 9.5px !important;
+  line-height: 1.3;
+}
+
+/*
+ * Operación: una fila de tres columnas cuando no hay procesos activos.
+ * Si hay procesos, estos ocupan una fila completa y no desplazan los formularios.
+ */
+.operations-grid {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(310px, .68fr) !important;
+  grid-template-areas:
+    "active active active"
+    "prep activity rail" !important;
+  align-items: start !important;
+  gap: 16px !important;
+  width: 100%;
+  margin: 0 0 16px !important;
+}
+
+.operations-grid > .active-dock {
+  grid-area: active;
+  min-width: 0;
+}
+
+.operations-grid > #prepOperationSection {
+  grid-area: prep;
+}
+
+.operations-grid > #activityOperationSection {
+  grid-area: activity;
+}
+
+.operations-grid > .side-rail {
+  grid-area: rail;
+}
+
+.operations-grid > #prepOperationSection,
+.operations-grid > #activityOperationSection,
+.operations-grid > .side-rail {
+  width: 100%;
+  min-width: 0;
+  height: auto !important;
+  min-height: 0 !important;
+  align-self: start !important;
+}
+
+#prepOperationSection,
+#activityOperationSection {
+  margin: 0 !important;
+  padding: 18px !important;
+}
+
+#prepWorkers .worker,
+#actWorkers .worker {
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+#prepWorkers .form,
+#actWorkers .form {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+}
+
+#prepWorkers .form > div,
+#actWorkers .form > div,
+.report-controls > div,
+.admin-config-grid > div,
+.close-grid > div {
+  min-width: 0;
+}
+
+input,
+select,
+textarea,
+button {
+  max-width: 100%;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  min-width: 0;
+}
+
+#prepWorkers .actions,
+#actWorkers .actions {
+  display: flex !important;
+  align-items: stretch;
+  gap: 7px !important;
+}
+
+#prepWorkers .actions button,
+#actWorkers .actions button {
+  flex: 1 1 96px !important;
+  min-width: 0;
+  min-height: 37px !important;
+  padding: 8px 10px !important;
+  white-space: normal;
+}
+
+#prepWorkers .timer,
+#actWorkers .timer {
+  width: 100% !important;
+  margin: 10px 0 4px !important;
+  font-size: clamp(27px, 2.2vw, 36px) !important;
+}
+
+.side-rail {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 12px !important;
+  align-content: start !important;
+}
+
+.side-rail > .card {
+  width: 100%;
+  min-width: 0;
+  margin: 0 !important;
+  padding: 16px !important;
+}
+
+.side-rail .section-head h2 {
+  font-size: 14px !important;
+  line-height: 1.28 !important;
+  overflow-wrap: anywhere;
+}
+
+#reportesExcel .note,
+#metasAdminSection .note,
+#cierreAdminSection .note,
+.daily-summary-card .note {
+  font-size: 10.5px !important;
+  line-height: 1.45;
+}
+
+#reportesExcel .report-controls {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 9px !important;
+}
+
+#reportesExcel .report-date-field input {
+  min-width: 0;
+  padding: 7px 6px !important;
+  font-size: 10.5px !important;
+}
+
+#reportesExcel .export-btn {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 43px !important;
+  padding: 8px 10px !important;
+  white-space: normal;
+}
+
+/* Procesos activos: banda completa, con tarjetas que se acomodan solas. */
+.operations-grid .active-dock {
+  position: relative !important;
+  top: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+.operations-grid .active-dock-inner {
+  max-width: none !important;
+  padding: 12px !important;
+  border-radius: 15px !important;
+  background:
+    radial-gradient(circle at 85% -50%, rgba(69, 134, 244, .38), transparent 28rem),
+    linear-gradient(135deg, #03183e, #082d68) !important;
+}
+
+.operations-grid .active-dock-head {
+  position: static !important;
+  margin: 0 0 9px !important;
+  padding: 0 2px !important;
+  background: transparent !important;
+}
+
+.operations-grid .active-list {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(285px, 1fr)) !important;
+  gap: 9px !important;
+  max-height: none !important;
+  overflow: visible !important;
+  padding: 0 !important;
+}
+
+.operations-grid .active-item {
+  width: auto !important;
+  min-width: 0;
+  min-height: 0 !important;
+  padding: 12px !important;
+  border: 1px solid rgba(255, 255, 255, .1) !important;
+  border-radius: 12px !important;
+  background: rgba(255, 255, 255, .075) !important;
+  box-shadow: none !important;
+}
+
+.operations-grid .active-dock:not(.visible) {
+  display: none !important;
+  min-height: 0 !important;
+}
+
+.operations-grid .active-dock:not(.visible)::after {
+  display: none !important;
+}
+
+/* Historiales y secciones inferiores comparten el mismo ritmo. */
+.history-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 16px !important;
+  align-items: start !important;
+  margin: 0 0 16px !important;
+}
+
+.history-grid > .card {
+  width: 100%;
+  min-width: 0;
+  margin: 0 !important;
+}
+
+.history-grid .table {
+  max-height: 340px !important;
+}
+
+.table {
+  max-width: 100%;
+}
+
+.app-footer {
+  margin-top: 4px;
+}
+
+/* En modo consulta solo quedan procesos, reporte y resumen: no reservar columnas vacías. */
+.viewer-mode .operations-grid {
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-areas:
+    "active"
+    "rail" !important;
+}
+
+.viewer-mode .side-rail {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+/* Pantallas medianas: dos columnas operativas y panel lateral ancho. */
+@media (max-width: 1280px) {
+  .app-header {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .app-header .user {
+    justify-content: flex-start !important;
+    padding-top: 12px !important;
+    border-top: 1px solid rgba(255, 255, 255, .11);
+  }
+
+  .dashboard-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .operations-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    grid-template-areas:
+      "active active"
+      "prep activity"
+      "rail rail" !important;
+  }
+
+  .side-rail {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 860px) {
+  .app-header {
+    min-height: 0 !important;
+    padding: 13px 15px !important;
+  }
+
+  .app-header .brand-wrap {
+    justify-content: flex-start !important;
+  }
+
+  .header-logo {
+    width: 142px !important;
+    max-width: 42vw;
+  }
+
+  .brand-copy {
+    padding-left: 14px !important;
+  }
+
+  .brand-copy h1 {
+    font-size: 18px !important;
+    white-space: normal;
+  }
+
+  .brand-copy div:last-of-type {
+    display: none;
+  }
+
+  .app-header .user {
+    gap: 7px !important;
+  }
+
+  .area-switcher {
+    order: 0 !important;
+    width: auto !important;
+    margin: 0 3px 0 0 !important;
+    padding: 0 9px 0 0 !important;
+    border-top: 0 !important;
+    border-right: 1px solid rgba(255, 255, 255, .13) !important;
+    overflow: visible !important;
+  }
+
+  .user-email {
+    display: none;
+  }
+
+  .section-nav {
+    overflow-x: auto !important;
+    justify-content: flex-start;
+  }
+
+  .section-nav a {
+    flex: 0 0 auto;
+  }
+
+  .operations-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-areas:
+      "active"
+      "prep"
+      "activity"
+      "rail" !important;
+    gap: 12px !important;
+  }
+
+  .side-rail {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .side-rail > #reportesExcel,
+  .side-rail > #dailySummaryCard {
+    grid-row: auto;
+  }
+
+  .history-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 12px !important;
+  }
+}
+
+@media (max-width: 620px) {
+  .app-header .brand-wrap {
+    gap: 10px !important;
+  }
+
+  .header-logo {
+    width: 122px !important;
+    padding: 6px 8px;
+    border-radius: 10px;
+  }
+
+  .brand-copy {
+    padding-left: 10px !important;
+  }
+
+  .brand-copy h1 {
+    font-size: 15px !important;
+  }
+
+  .page-area-badge {
+    font-size: 8px;
+  }
+
+  .app-header .user {
+    align-items: stretch !important;
+  }
+
+  .area-switcher {
+    order: 20 !important;
+    width: 100% !important;
+    margin: 2px 0 0 !important;
+    padding: 8px 0 0 !important;
+    border-top: 1px solid rgba(255, 255, 255, .1) !important;
+    border-right: 0 !important;
+    overflow-x: auto !important;
+  }
+
+  .area-switcher a {
+    flex: 1;
+    min-width: 66px;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  .dash-kpi {
+    grid-template-columns: 38px minmax(0, 1fr) !important;
+    min-height: 103px !important;
+    padding: 12px !important;
+  }
+
+  .dash-kpi .kpi-glyph {
+    width: 34px !important;
+    height: 34px !important;
+    font-size: 15px !important;
+  }
+
+  .side-rail {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .viewer-mode .side-rail {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  #prepWorkers .form,
+  #actWorkers .form {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  #prepWorkers .form > div:first-child,
+  #prepWorkers .form > .shared-selector,
+  #actWorkers .form > div:first-child,
+  #actWorkers .form > .shared-selector {
+    grid-column: 1 !important;
+  }
+
+  #reportesExcel .report-controls {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  #reportesExcel .report-date-field,
+  #reportesExcel .report-presets,
+  #reportesExcel .report-period-selected,
+  #reportesExcel .export-btn {
+    grid-column: 1 !important;
+  }
+
+  .operations-grid .active-list {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+@media (max-width: 390px) {
+  .dashboard-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
