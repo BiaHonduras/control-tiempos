@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">BIA Bodega</title>
+  <desc id="desc">Ícono corporativo de una bodega</desc>
+  <defs>
+    <linearGradient id="bg" x1="68" y1="44" x2="444" y2="468" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#061D45"/>
+      <stop offset="1" stop-color="#0B3E79"/>
+    </linearGradient>
+    <linearGradient id="roof" x1="102" y1="128" x2="415" y2="268" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#6BA2FF"/>
+      <stop offset="1" stop-color="#2F7CF6"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+  <path d="M88 236 244 115a20 20 0 0 1 24 0l156 121a20 20 0 0 1-12 36H100a20 20 0 0 1-12-36Z" fill="url(#roof)"/>
+  <path d="M113 246h286v157a25 25 0 0 1-25 25H138a25 25 0 0 1-25-25V246Z" fill="#F7FAFF"/>
+  <path d="M174 280h164a14 14 0 0 1 14 14v134H160V294a14 14 0 0 1 14-14Z" fill="#DDE9FB"/>
+  <path d="M160 331h192M160 382h192" stroke="#78A6EE" stroke-width="15"/>
+  <rect x="184" y="299" width="49" height="30" rx="6" fill="#2F7CF6"/>
+  <rect x="252" y="299" width="76" height="30" rx="6" fill="#194F9A"/>
+  <rect x="184" y="350" width="73" height="30" rx="6" fill="#194F9A"/>
+  <rect x="276" y="350" width="52" height="30" rx="6" fill="#2F7CF6"/>
+  <path d="M98 247h316" stroke="#BFD6FC" stroke-width="13" stroke-linecap="round"/>
+</svg>
