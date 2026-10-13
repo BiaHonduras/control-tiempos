@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
     try { body = await req.json() } catch { return json({ error: 'JSON_INVALIDO' }, 400) }
     if (body?.action === 'change_own_password') {
       const password = String(body.password || '')
-      if (!passwordValid(password) || password === 'Cafemaya24') return json({error:'CONTRASENA_INVALIDA',message:'La contraseña debe tener al menos 8 caracteres, mayúscula, minúscula, número y símbolo.'},400)
+      if (!passwordValid(password) || password === 'Cafemaya24*') return json({error:'CONTRASENA_INVALIDA',message:'La contraseña debe tener al menos 8 caracteres, mayúscula, minúscula, número y símbolo.'},400)
       const { error } = await admin.auth.admin.updateUserById(callerData.user.id, {
         password, app_metadata: { ...callerData.user.app_metadata, must_change_password: false },
       })
@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
     const nombre = String(body.nombre || '').trim()
     const sede = String(body.sede || '').trim().toUpperCase()
     const rol = String(body.rol || 'consulta').trim().toLowerCase()
-    const password = 'Cafemaya24'
+    const password = 'Cafemaya24*'
 
     if (!email || !email.includes('@')) return json({ error: 'EMAIL_INVALIDO' }, 400)
     if (!['SPS', 'CBA', 'SRC'].includes(sede)) return json({ error: 'SEDE_INVALIDA' }, 400)

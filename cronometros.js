@@ -653,12 +653,12 @@ function limpiarUsuarioAcceso(){
  const f=document.getElementById('userAccessForm');if(!f)return;f.reset();
  const userId=document.getElementById('accessUserId');if(userId)userId.value='';
  const email=document.getElementById('accessEmail');if(email){email.readOnly=false;email.value=''}
- const pass=document.getElementById('accessPassword');if(pass){pass.disabled=true;pass.value='Cafemaya24';pass.setAttribute('autocomplete','new-password')}
+ const pass=document.getElementById('accessPassword');if(pass){pass.disabled=true;pass.value='Cafemaya24*';pass.setAttribute('autocomplete','new-password')}
  const sede=document.getElementById('accessSede');if(sede){sede.disabled=false;sede.value=SEDE_ACTUAL}
  document.getElementById('accessRol').value='consulta';
  document.getElementById('accessCierre').value='false';
  const submit=document.getElementById('accessSubmitBtn');if(submit)submit.textContent='Crear / asignar usuario';
- const note=document.getElementById('userAccessModeNote');if(note)note.textContent='Las cuentas nuevas usan Cafemaya24 y deben cambiarla al ingresar por primera vez.';
+ const note=document.getElementById('userAccessModeNote');if(note)note.textContent='Las cuentas nuevas usan Cafemaya24* y deben cambiarla al ingresar por primera vez.';
 }
 document.getElementById('accessCancel')?.addEventListener('click',limpiarUsuarioAcceso);
 async function cargarUsuariosAcceso(){
