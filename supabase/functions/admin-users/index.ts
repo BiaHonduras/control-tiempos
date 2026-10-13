@@ -34,17 +34,38 @@ Deno.serve(async (req) => {
     if (callerError || !callerData.user) return json({ error: 'AUTH_REQUIRED', message: callerError?.message || 'Sesión no válida.' }, 401)
 
     const callerEmail = (callerData.user.email || '').trim().toLowerCase()
-    if (callerEmail !== 'javierh@biabrands.co') return json({ error: 'SOLO_USUARIO_MAESTRO' }, 403)
-
+    
     let body: any = null
     try { body = await req.json() } catch { return json({ error: 'JSON_INVALIDO' }, 400) }
+    if (body?.action === 'change_own_password') {
+      const password = String(body.password || '')
+      if (password.length < 8 || password === 'Cafemaya24') return json({error:'CONTRASENA_NUEVA_MINIMO_8'},400)
+      const { error } = await admin.auth.admin.updateUserById(callerData.user.id, {
+        password, app_metadata: { ...callerData.user.app_metadata, must_change_password: false },
+      })
+      if (error) return json({error:'AUTH_UPDATE_PASSWORD',message:error.message},400)
+      return json({ok:true})
+    }
+    if (callerEmail !== 'javierh@biabrands.co' || callerData.user.app_metadata?.must_change_password) return json({ error: 'SOLO_USUARIO_MAESTRO' }, 403)
+    if (body?.action === 'reset_password') {
+      const userId=String(body.user_id || '')
+      const password=String(body.password || '')
+      if (!userId || password.length < 8) return json({error:'CONTRASENA_MINIMO_8'},400)
+      const {data:target,error:lookup}=await admin.auth.admin.getUserById(userId)
+      if(lookup || !target.user) return json({error:'USUARIO_NO_EXISTE'},404)
+      const {error}=await admin.auth.admin.updateUserById(userId,{password,app_metadata:{...target.user.app_metadata,must_change_password:true}})
+      if(error) return json({error:'AUTH_UPDATE_PASSWORD',message:error.message},400)
+      return json({ok:true})
+    }
+
+
     if (body?.action !== 'create_or_assign') return json({ error: 'ACCION_INVALIDA' }, 400)
 
     const email = String(body.email || '').trim().toLowerCase()
     const nombre = String(body.nombre || '').trim()
     const sede = String(body.sede || '').trim().toUpperCase()
     const rol = String(body.rol || 'consulta').trim().toLowerCase()
-    const password = String(body.password || '')
+    const password = 'Cafemaya24'
 
     if (!email || !email.includes('@')) return json({ error: 'EMAIL_INVALIDO' }, 400)
     if (!['SPS', 'CBA', 'SRC'].includes(sede)) return json({ error: 'SEDE_INVALIDA' }, 400)
@@ -66,6 +87,7 @@ Deno.serve(async (req) => {
         password,
         email_confirm: true,
         user_metadata: { nombre },
+        app_metadata: { must_change_password: true },
       })
       if (error) return json({ error: 'AUTH_CREATE_USER', message: error.message }, 400)
       user = data.user

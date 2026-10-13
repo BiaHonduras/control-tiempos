@@ -1,6 +1,6 @@
-const CACHE_NAME='bia-control-v3.1.3-users';
+const CACHE_NAME='bia-control-v3.1.4-passwords';
 const APP_SHELL=[
-  './','./index.html','./cronometros.html','./cba.html','./src.html','./cronometros.js','./supabase-config.js',
+  './','./index.html','./cambiar-password.html','./cronometros.html','./cba.html','./src.html','./cronometros.js','./supabase-config.js',
   './vendor/jszip.min.js','./pwa.js','./offline.html','./warehouse-ui.css',
   './assets/bia-honduras-logo.png','./manifest.webmanifest',
   './icons/warehouse.svg','./icons/warehouse-192.png','./icons/warehouse-512.png','./icons/warehouse-maskable-512.png'

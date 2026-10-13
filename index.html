@@ -130,7 +130,7 @@ input{
   </main>
   <script type="module">
     import { iniciarSesion, obtenerSesion, supabase } from './supabase-config.js';
-    async function irPrimeraSede(){try{const {data}=await supabase.rpc('obtener_sedes_usuario');const sedes=Array.isArray(data)?data:[];const s=sedes.includes('SPS')?'SPS':sedes[0];location.replace(s==='CBA'?'./cba.html':s==='SRC'?'./src.html':'./cronometros.html')}catch(e){location.replace('./cronometros.html')}}
+    async function irPrimeraSede(){const {data:userData,error:userError}=await supabase.auth.getUser();if(userError)throw userError;if(userData.user?.app_metadata?.must_change_password){location.replace('./cambiar-password.html');return}try{const {data}=await supabase.rpc('obtener_sedes_usuario');const sedes=Array.isArray(data)?data:[];const s=sedes.includes('SPS')?'SPS':sedes[0];location.replace(s==='CBA'?'./cba.html':s==='SRC'?'./src.html':'./cronometros.html')}catch(e){location.replace('./cronometros.html')}}
 const actual=await obtenerSesion(); if(actual.ok&&actual.session) await irPrimeraSede();
     const form=document.getElementById('loginForm'),msg=document.getElementById('mensaje'),btn=document.getElementById('btnLogin');
     form.addEventListener('submit',async e=>{e.preventDefault();msg.textContent='';btn.disabled=true;btn.textContent='Validando…';const result=await iniciarSesion(document.getElementById('email').value.trim(),document.getElementById('password').value);btn.disabled=false;btn.textContent='Ingresar al sistema';if(!result.ok){msg.className='msg error';msg.textContent='Usuario o contraseña incorrectos.';return}msg.className='msg ok';msg.textContent='Acceso correcto.';await irPrimeraSede()});
@@ -138,3 +138,4 @@ const actual=await obtenerSesion(); if(actual.ok&&actual.session) await irPrimer
   <script src="./pwa.js" defer></script>
 </body>
 </html>
+

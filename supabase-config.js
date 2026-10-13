@@ -73,7 +73,14 @@ export async function obtenerSesion() {
     try {
         const { data, error } = await supabase.auth.getSession();
         if (error) throw error;
-
+        if(data.session){
+          const {data:u,error:e}=await supabase.auth.getUser();
+          if(e)throw e;
+          if(u.user?.app_metadata?.must_change_password && !location.pathname.endsWith('/index.html') && !location.pathname.endsWith('/cambiar-password.html') && !location.pathname.endsWith('/')){
+            location.replace('./cambiar-password.html');
+            return {ok:false,session:null};
+          }
+        }
         return {
             ok: true,
             session: data.session
@@ -119,3 +126,4 @@ export function escucharCambiosSesion(callback) {
 
     return data.subscription;
 }
+

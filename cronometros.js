@@ -653,12 +653,12 @@ function limpiarUsuarioAcceso(){
  const f=document.getElementById('userAccessForm');if(!f)return;f.reset();
  const userId=document.getElementById('accessUserId');if(userId)userId.value='';
  const email=document.getElementById('accessEmail');if(email){email.readOnly=false;email.value=''}
- const pass=document.getElementById('accessPassword');if(pass){pass.disabled=false;pass.value='';pass.setAttribute('autocomplete','new-password')}
+ const pass=document.getElementById('accessPassword');if(pass){pass.disabled=true;pass.value='Cafemaya24';pass.setAttribute('autocomplete','new-password')}
  const sede=document.getElementById('accessSede');if(sede){sede.disabled=false;sede.value=SEDE_ACTUAL}
  document.getElementById('accessRol').value='consulta';
  document.getElementById('accessCierre').value='false';
  const submit=document.getElementById('accessSubmitBtn');if(submit)submit.textContent='Crear / asignar usuario';
- const note=document.getElementById('userAccessModeNote');if(note)note.textContent='Para un usuario existente puede dejar la contraseña vacía. La Edge Function solo se usa al crear una cuenta nueva.';
+ const note=document.getElementById('userAccessModeNote');if(note)note.textContent='Las cuentas nuevas usan Cafemaya24 y deben cambiarla al ingresar por primera vez.';
 }
 document.getElementById('accessCancel')?.addEventListener('click',limpiarUsuarioAcceso);
 async function cargarUsuariosAcceso(){
@@ -687,7 +687,7 @@ document.getElementById('userAccessForm')?.addEventListener('submit',async e=>{
   action:'create_or_assign',
   email:document.getElementById('accessEmail').value.trim(),
   nombre:document.getElementById('accessNombre').value.trim(),
-  password:editingUserId?'':document.getElementById('accessPassword').value,
+  password:editingUserId?document.getElementById('accessPassword').value:'',
   sede:document.getElementById('accessSede').value,
   rol:document.getElementById('accessRol').value,
   puede_cierre_dia:document.getElementById('accessCierre').value==='true'
@@ -701,7 +701,7 @@ document.getElementById('userAccessForm')?.addEventListener('submit',async e=>{
 
   // Editar un acceso existente NUNCA necesita Edge Function.
   // También usamos RPC cuando se asigna una cuenta Auth ya existente sin contraseña.
-  if(editingUserId||!body.password){
+  if(editingUserId){
    const r=await supabase.rpc('master_asignar_usuario_existente',{
     p_email:body.email,
     p_nombre:body.nombre||null,
@@ -711,6 +711,11 @@ document.getElementById('userAccessForm')?.addEventListener('submit',async e=>{
    });
    if(r.error)throw r.error;
    data={created:false,updated:!!editingUserId};
+   if(body.password){
+    const reset=await supabase.functions.invoke('admin-users',{body:{action:'reset_password',user_id:editingUserId,password:body.password}});
+    if(reset.error)throw new Error('Acceso guardado; contraseña sin cambiar: '+await detalleErrorEdgeFunction(reset.error));
+    if(reset.data?.error)throw new Error(reset.data.error);
+   }
   }else{
    const r=await supabase.functions.invoke('admin-users',{body});
    if(r.error)throw new Error(await detalleErrorEdgeFunction(r.error));
@@ -738,9 +743,9 @@ document.addEventListener('click',async e=>{
   const sede=document.getElementById('accessSede');sede.value=u.sede||SEDE_ACTUAL;sede.disabled=true;
   document.getElementById('accessRol').value=u.rol||'consulta';
   document.getElementById('accessCierre').value=String(!!u.puede_cierre_dia);
-  const pass=document.getElementById('accessPassword');pass.value='';pass.disabled=true;
+  const pass=document.getElementById('accessPassword');pass.value='';pass.disabled=false;pass.placeholder='Vacío para conservar la contraseña';
   const submit=document.getElementById('accessSubmitBtn');if(submit)submit.textContent='Guardar cambios';
-  const note=document.getElementById('userAccessModeNote');if(note)note.textContent='Editando un acceso existente. Correo, sede y contraseña quedan protegidos; puede modificar nombre, rol y permiso de cierre.';
+  const note=document.getElementById('userAccessModeNote');if(note)note.textContent='Editando un acceso existente. Puede modificar nombre, rol y contraseña. Deje la contraseña vacía para conservarla; si la cambia, el usuario deberá sustituirla al ingresar.';
   document.getElementById('userAccessMessage').textContent='';
   document.getElementById('accessNombre').focus();
   return
