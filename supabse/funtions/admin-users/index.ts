@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
         if (!access) return json({ error: 'USUARIO_FUERA_DE_SEDE' }, 403)
         const { data: targetMaster, error: targetError } = await admin.auth.admin.getUserById(userId)
         if (targetError || !targetMaster.user) return json({ error: 'USUARIO_NO_EXISTE' }, 404)
-        if (['javierh@biabrands.co','fesicars@gmail.com'].includes((targetMaster.user.email || '').toLowerCase())) return json({ error: 'SOLO_USUARIO_MAESTRO' }, 403)
+        if (['javierh@biabrands.co'].includes((targetMaster.user.email || '').toLowerCase())) return json({ error: 'SOLO_USUARIO_MAESTRO' }, 403)
       }
       const {data:target,error:lookup}=await admin.auth.admin.getUserById(userId)
       if(lookup || !target.user) return json({error:'USUARIO_NO_EXISTE'},404)

@@ -51,7 +51,7 @@ begin
   if sqlerrm not like 'SOLO_ADMINISTRADOR_SEDE%' then raise; end if;
  end;
  declare m uuid; begin
-  select id into m from auth.users where lower(email) in ('javierh@biabrands.co','fesicars@gmail.com')
+  select id into m from auth.users where lower(email) in ('javierh@biabrands.co')
    and coalesce(raw_app_meta_data->>'must_change_password','false')<>'true' limit 1;
   if m is null then raise exception 'NO_MASTER_TEST_CONTEXT'; end if;
   begin

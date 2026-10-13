@@ -27,7 +27,7 @@ begin
  select email into v_actor_email from auth.users where id=p_actor
  and coalesce(raw_app_meta_data->>'must_change_password','false')<>'true';
  if not found then raise exception 'AUTH_REQUIRED'; end if;
- v_maestro:=lower(v_actor_email) in ('javierh@biabrands.co','fesicars@gmail.com');
+ v_maestro:=lower(v_actor_email) in ('javierh@biabrands.co');
  -- Serializa eliminaciones y cambios de accesos para revalidar el mínimo de usuarios.
  lock table public.usuarios_sedes in share row exclusive mode;
  select email into v_email from auth.users where id=p_usuario for update;
@@ -64,7 +64,7 @@ begin
   if v_opciones is null then raise exception 'SIN_OTRO_USUARIO: No se puede eliminar. Debe existir al menos otro usuario activo en la sede % para recibir sus gestiones.',v_s; end if;
   if exists(select 1 from public.usuarios_sedes where user_id=p_usuario and sede=v_s and activo and rol='admin')
    and not exists(select 1 from public.usuarios_sedes where user_id<>p_usuario and sede=v_s and activo and rol='admin')
-   and not exists(select 1 from auth.users where id<>p_usuario and lower(email) in('javierh@biabrands.co','fesicars@gmail.com') and coalesce(raw_app_meta_data->>'must_change_password','false')<>'true')
+   and not exists(select 1 from auth.users where id<>p_usuario and lower(email) in('javierh@biabrands.co') and coalesce(raw_app_meta_data->>'must_change_password','false')<>'true')
   then raise exception 'ULTIMO_ADMINISTRADOR: Asigne otro administrador en % antes de eliminar esta cuenta.',v_s; end if;
   v_plan:=v_plan||jsonb_build_array(jsonb_build_object('sede',v_s,'usuarios',v_opciones));
  end loop;
