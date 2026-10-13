@@ -56,6 +56,19 @@ Deno.serve(async (req) => {
     const { data: authorized, error: permissionError } = await caller.rpc('usuario_es_admin_sede', { p_sede: requestedSede })
     if (permissionError) return json({ error: 'PERMISOS_NO_DISPONIBLES' }, 500)
     if (authorized !== true) return json({ error: 'SOLO_ADMINISTRADOR_SEDE' }, 403)
+    if (body?.action === 'preview_delete' || body?.action === 'delete_user') {
+      const userId = String(body.user_id || '')
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)) return json({ error: 'USUARIO_INVALIDO' }, 400)
+      const deleting = body.action === 'delete_user'
+      if (deleting && body.confirmed !== true) return json({ error: 'CONFIRMACION_REQUERIDA', message: 'Debe confirmar que está de acuerdo con eliminar el usuario.' }, 400)
+      if (deleting && (!body.recipients || typeof body.recipients !== 'object' || Array.isArray(body.recipients))) return json({ error: 'RECEPTORES_INVALIDOS' }, 400)
+      const { data, error } = await admin.rpc('admin_eliminar_usuario_completo_v1', {
+        p_actor: callerData.user.id, p_usuario: userId, p_sede: requestedSede,
+        p_receptores: deleting ? body.recipients : null, p_confirmado: deleting,
+      })
+      if (error) return json({ error: 'ELIMINACION_NO_PERMITIDA', message: error.message.replace(/^[A-Z_]+:\s*/, '') }, 400)
+      return json(data)
+    }
     if (body?.action === 'reset_password') {
       const userId=String(body.user_id || '')
       const password=String(body.password || '')

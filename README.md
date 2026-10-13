@@ -1,3 +1,18 @@
+BIA HONDURAS · PWA v3.1.9
+
+ELIMINACIÓN DE USUARIOS CON TRASPASO
+
+- Usuarios y accesos incluye Eliminar junto a Activar/Desactivar.
+- Antes de eliminar, se elige otro usuario activo de la misma sede.
+- Si la cuenta tiene accesos o gestiones en varias sedes, se exige un receptor por sede y permiso de administrador en cada una.
+- No se permite eliminar sin otro usuario activo; la aplicación muestra el error al pulsar Eliminar.
+- Siempre se solicita confirmación explícita después de seleccionar receptores.
+- La cuenta Auth, sus sesiones y sus accesos se eliminan en la misma transacción que el traspaso. Cualquier fallo revierte todo.
+- Se conservan tiempos, registros y trazabilidad mediante un registro privado del traspaso.
+- Una cuenta con acceso activo a inventarios debe desactivar ese acceso antes de eliminarse por completo para evitar afectar otro módulo.
+- Las RPC de eliminación solo son ejecutables por service_role. La Edge Function verifica la sesión y obtiene el solicitante del token.
+- Prueba SQL: supabase/tests/eliminar_usuarios.sql. Usa cuentas sintéticas y ROLLBACK; no modifica usuarios reales.
+
 BIA HONDURAS · PWA v3.1.1
 
 CORRECCIÓN DE DISTRIBUCIÓN EN ESCRITORIO

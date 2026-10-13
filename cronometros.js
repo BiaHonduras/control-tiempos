@@ -666,7 +666,7 @@ async function cargarUsuariosAcceso(){
  const {data,error}=await supabase.rpc('listar_usuarios_sede_v1',{p_sede:SEDE_ACTUAL});
  const body=document.getElementById('userAccessTable');if(!body)return;
  if(error){body.innerHTML=`<tr><td colspan="7">${esc(error.message)}</td></tr>`;return}
- body.innerHTML=(data||[]).map(u=>`<tr><td>${esc(u.email||'')}</td><td>${esc(u.nombre||'')}</td><td>${esc(u.sede)}</td><td>${esc(u.rol)}</td><td>${u.puede_cierre_dia?'Sí':'No'}</td><td>${u.activo?'Activo':'Inactivo'}</td><td><button class="light" data-edit-access='${JSON.stringify(u).replace(/'/g,"&#39;")}'>Editar</button> <button class="${u.activo?'danger':'ok'}" data-toggle-access="${u.user_id}" data-access-active="${!u.activo}">${u.activo?'Desactivar':'Activar'}</button></td></tr>`).join('');
+ body.innerHTML=(data||[]).map(u=>`<tr><td>${esc(u.email||'')}</td><td>${esc(u.nombre||'')}</td><td>${esc(u.sede)}</td><td>${esc(u.rol)}</td><td>${u.puede_cierre_dia?'Sí':'No'}</td><td>${u.activo?'Activo':'Inactivo'}</td><td><button class="light" data-edit-access='${JSON.stringify(u).replace(/'/g,"&#39;")}'>Editar</button> <button class="${u.activo?'danger':'ok'}" data-toggle-access="${u.user_id}" data-access-active="${!u.activo}">${u.activo?'Desactivar':'Activar'}</button> <button class="danger" data-delete-access="${u.user_id}">Eliminar</button></td></tr>`).join('');
 }
 async function detalleErrorEdgeFunction(error){
  let detalle='';
@@ -753,6 +753,66 @@ document.addEventListener('click',async e=>{
  }
  const tog=e.target.closest('[data-toggle-access]');
  if(tog&&esAdmin){try{const {error}=await supabase.rpc('master_cambiar_estado_acceso',{p_user_id:tog.dataset.toggleAccess,p_sede:SEDE_ACTUAL,p_activo:tog.dataset.accessActive==='true'});if(error)throw error;await cargarUsuariosAcceso()}catch(err){alert('No se pudo cambiar el acceso: '+err.message)}}
+});
+
+// Eliminación completa: preparar receptores, confirmar y revalidar en el servidor.
+let eliminacionUsuarioPendiente=null;
+const deleteUserDialog=document.createElement('dialog');
+deleteUserDialog.className='delete-user-dialog';
+deleteUserDialog.innerHTML=`<form id="deleteUserForm"><h3>Eliminar usuario</h3><p id="deleteUserSummary"></p><p>Seleccione quién recibirá sus gestiones en cada sede. Se conservarán los registros y el historial.</p><div id="deleteUserRecipients"></div><p id="deleteUserError" role="alert" aria-live="polite"></p><div class="delete-user-actions"><button type="button" id="deleteUserCancel" class="light">Cancelar</button><button type="submit" id="deleteUserSubmit" class="danger">Eliminar y transferir</button></div></form>`;
+document.body.appendChild(deleteUserDialog);
+const deleteUserStyle=document.createElement('style');
+deleteUserStyle.textContent='.delete-user-dialog{width:min(540px,calc(100% - 32px));max-height:85vh;overflow:auto;border:0;border-radius:16px;padding:24px;color:#17233c;box-shadow:0 16px 60px #0004}.delete-user-dialog::backdrop{background:#101c38a6}.delete-user-dialog h3{margin-top:0}.delete-user-dialog label{display:block;margin:14px 0 6px;font-weight:700}.delete-user-dialog select{width:100%;min-height:44px}.delete-user-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;flex-wrap:wrap}#deleteUserError{color:#a51b24;white-space:pre-wrap}';
+document.head.appendChild(deleteUserStyle);
+function cerrarEliminacionUsuario(){deleteUserDialog.close();eliminacionUsuarioPendiente=null;}
+document.getElementById('deleteUserCancel').addEventListener('click',cerrarEliminacionUsuario);
+deleteUserDialog.addEventListener('cancel',e=>{if(document.getElementById('deleteUserSubmit').disabled){e.preventDefault();return}eliminacionUsuarioPendiente=null;});
+document.addEventListener('click',async e=>{
+ const btn=e.target.closest('[data-delete-access]');if(!btn||!esAdmin)return;
+ const msg=document.getElementById('userAccessMessage');
+ try{
+  btn.disabled=true;msg.textContent='Comprobando usuarios disponibles para el traspaso...';
+  const {data,error}=await supabase.functions.invoke('admin-users',{body:{action:'preview_delete',user_id:btn.dataset.deleteAccess,sede:SEDE_ACTUAL}});
+  if(error)throw new Error(await detalleErrorEdgeFunction(error));
+  if(data?.error)throw new Error(data.message||data.error);
+  if(!data?.sedes?.length)throw new Error('No existe otro usuario disponible para recibir las gestiones.');
+  for(const item of data.sedes)if(!item.usuarios?.length)throw new Error('No se puede eliminar. Debe existir al menos otro usuario activo en la sede '+item.sede+'.');
+  eliminacionUsuarioPendiente=data;
+  document.getElementById('deleteUserSummary').textContent='Se eliminará por completo la cuenta '+data.email+'. Esta acción es permanente.';
+  document.getElementById('deleteUserError').textContent='';
+  const container=document.getElementById('deleteUserRecipients');container.replaceChildren();
+  for(const item of data.sedes){
+   const label=document.createElement('label');label.textContent='Recibir gestiones de '+item.sede;label.htmlFor='deleteRecipient'+item.sede;
+   const select=document.createElement('select');select.id=label.htmlFor;select.dataset.recipientSede=item.sede;select.required=true;
+   select.add(new Option('Seleccione un usuario',''));
+   for(const u of item.usuarios)select.add(new Option((u.nombre?u.nombre+' — ':'')+u.email,u.user_id));
+   container.append(label,select);
+  }
+  msg.textContent='';deleteUserDialog.showModal();
+ }catch(err){msg.textContent='No se pudo eliminar: '+err.message;alert(msg.textContent)}finally{btn.disabled=false}
+});
+document.getElementById('deleteUserForm').addEventListener('submit',async e=>{
+ e.preventDefault();if(!esAdmin||!eliminacionUsuarioPendiente)return;
+ const plan=eliminacionUsuarioPendiente;const recipients={};const summary=[];
+ for(const select of deleteUserDialog.querySelectorAll('[data-recipient-sede]')){
+  if(!select.value){select.reportValidity();return}
+  recipients[select.dataset.recipientSede]=select.value;
+  summary.push(select.dataset.recipientSede+': '+select.options[select.selectedIndex].text);
+ }
+ if(!window.confirm('¿Está de acuerdo con eliminar por completo a '+plan.email+'?\n\nSus gestiones se transferirán a:\n'+summary.join('\n')+'\n\nLa cuenta y sus accesos serán eliminados permanentemente.'))return;
+ const submit=document.getElementById('deleteUserSubmit');const cancel=document.getElementById('deleteUserCancel');
+ const errorNode=document.getElementById('deleteUserError');
+ try{
+  submit.disabled=true;cancel.disabled=true;errorNode.textContent='Transfiriendo gestiones y eliminando la cuenta...';
+  const {data,error}=await supabase.functions.invoke('admin-users',{body:{action:'delete_user',user_id:plan.usuario_id,sede:SEDE_ACTUAL,recipients,confirmed:true}});
+  if(error)throw new Error(await detalleErrorEdgeFunction(error));
+  if(data?.error)throw new Error(data.message||data.error);
+  if(data?.deleted!==true)throw new Error('No se confirmó la eliminación. Actualice la lista antes de volver a intentar.');
+  cerrarEliminacionUsuario();limpiarUsuarioAcceso();
+  document.getElementById('userAccessMessage').textContent='Usuario eliminado por completo. Sus gestiones fueron transferidas correctamente.';
+  if(plan.usuario_id===usuarioActualId){await supabase.auth.signOut();location.replace('./index.html');return}
+  await Promise.all([cargarUsuariosAcceso(),cargarTodo()]);
+ }catch(err){errorNode.textContent='No se pudo eliminar: '+err.message}finally{submit.disabled=false;cancel.disabled=false}
 });
 
 // ===== CONTROL DE AUSENCIAS V2.6.5 =====
