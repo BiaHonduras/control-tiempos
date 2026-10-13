@@ -651,9 +651,14 @@ document.addEventListener('change',async e=>{
 // ===== USUARIOS Y ACCESOS POR SEDE v3.0 =====
 function limpiarUsuarioAcceso(){
  const f=document.getElementById('userAccessForm');if(!f)return;f.reset();
- document.getElementById('accessSede').value=SEDE_ACTUAL;
+ const userId=document.getElementById('accessUserId');if(userId)userId.value='';
+ const email=document.getElementById('accessEmail');if(email){email.readOnly=false;email.value=''}
+ const pass=document.getElementById('accessPassword');if(pass){pass.disabled=false;pass.value='';pass.setAttribute('autocomplete','new-password')}
+ const sede=document.getElementById('accessSede');if(sede){sede.disabled=false;sede.value=SEDE_ACTUAL}
  document.getElementById('accessRol').value='consulta';
  document.getElementById('accessCierre').value='false';
+ const submit=document.getElementById('accessSubmitBtn');if(submit)submit.textContent='Crear / asignar usuario';
+ const note=document.getElementById('userAccessModeNote');if(note)note.textContent='Para un usuario existente puede dejar la contraseña vacía. La Edge Function solo se usa al crear una cuenta nueva.';
 }
 document.getElementById('accessCancel')?.addEventListener('click',limpiarUsuarioAcceso);
 async function cargarUsuariosAcceso(){
@@ -663,27 +668,83 @@ async function cargarUsuariosAcceso(){
  if(error){body.innerHTML=`<tr><td colspan="7">${esc(error.message)}</td></tr>`;return}
  body.innerHTML=(data||[]).map(u=>`<tr><td>${esc(u.email||'')}</td><td>${esc(u.nombre||'')}</td><td>${esc(u.sede)}</td><td>${esc(u.rol)}</td><td>${u.puede_cierre_dia?'Sí':'No'}</td><td>${u.activo?'Activo':'Inactivo'}</td><td><button class="light" data-edit-access='${JSON.stringify(u).replace(/'/g,"&#39;")}'>Editar</button> <button class="${u.activo?'danger':'ok'}" data-toggle-access="${u.user_id}" data-access-active="${!u.activo}">${u.activo?'Desactivar':'Activar'}</button></td></tr>`).join('');
 }
+async function detalleErrorEdgeFunction(error){
+ let detalle='';
+ try{
+  const ctx=error?.context;
+  if(ctx&&typeof ctx.clone==='function'){
+   const resp=ctx.clone();
+   try{const j=await resp.json();detalle=j?.error||j?.message||j?.code||''}catch(_){try{detalle=await resp.text()}catch(__){}}
+  }
+ }catch(_){}
+ return String(detalle||error?.message||error||'Error desconocido').replace(/^Error:\s*/,'');
+}
 document.getElementById('userAccessForm')?.addEventListener('submit',async e=>{
  e.preventDefault();if(!esMaestro)return;
  const msg=document.getElementById('userAccessMessage');
- const body={action:'create_or_assign',email:document.getElementById('accessEmail').value.trim(),nombre:document.getElementById('accessNombre').value.trim(),password:document.getElementById('accessPassword').value,sede:document.getElementById('accessSede').value,rol:document.getElementById('accessRol').value,puede_cierre_dia:document.getElementById('accessCierre').value==='true'};
+ const editingUserId=document.getElementById('accessUserId')?.value||'';
+ const body={
+  action:'create_or_assign',
+  email:document.getElementById('accessEmail').value.trim(),
+  nombre:document.getElementById('accessNombre').value.trim(),
+  password:editingUserId?'':document.getElementById('accessPassword').value,
+  sede:document.getElementById('accessSede').value,
+  rol:document.getElementById('accessRol').value,
+  puede_cierre_dia:document.getElementById('accessCierre').value==='true'
+ };
+ const submit=document.getElementById('accessSubmitBtn');
+ const original=submit?.textContent||'';
  try{
-  msg.textContent='Procesando usuario...';
+  if(submit)submit.disabled=true;
+  msg.textContent=editingUserId?'Guardando cambios del usuario...':'Procesando usuario...';
   let data=null;
-  if(!body.password){
-   const r=await supabase.rpc('master_asignar_usuario_existente',{p_email:body.email,p_nombre:body.nombre||null,p_sede:body.sede,p_rol:body.rol,p_puede_cierre:body.puede_cierre_dia});
-   if(r.error)throw r.error;data={created:false};
+
+  // Editar un acceso existente NUNCA necesita Edge Function.
+  // También usamos RPC cuando se asigna una cuenta Auth ya existente sin contraseña.
+  if(editingUserId||!body.password){
+   const r=await supabase.rpc('master_asignar_usuario_existente',{
+    p_email:body.email,
+    p_nombre:body.nombre||null,
+    p_sede:body.sede,
+    p_rol:body.rol,
+    p_puede_cierre:body.puede_cierre_dia
+   });
+   if(r.error)throw r.error;
+   data={created:false,updated:!!editingUserId};
   }else{
    const r=await supabase.functions.invoke('admin-users',{body});
-   if(r.error)throw r.error;if(r.data?.error)throw new Error(r.data.error);data=r.data;
+   if(r.error)throw new Error(await detalleErrorEdgeFunction(r.error));
+   if(r.data?.error)throw new Error(r.data.error);
+   data=r.data||{};
   }
-  msg.textContent=data?.created?'Usuario creado y asignado correctamente.':'Acceso actualizado correctamente.';
-  limpiarUsuarioAcceso();await cargarUsuariosAcceso();
- }catch(err){msg.textContent='No se pudo crear/asignar: '+String(err.message||err)}
+
+  msg.textContent=data?.created?'Usuario nuevo creado y asignado correctamente.':editingUserId?'Usuario actualizado correctamente.':'Acceso asignado correctamente.';
+  limpiarUsuarioAcceso();
+  await cargarUsuariosAcceso();
+ }catch(err){
+  const m=String(err?.message||err||'Error desconocido');
+  msg.textContent='No se pudo crear/asignar: '+m;
+ }finally{
+  if(submit){submit.disabled=false;if(!document.getElementById('accessUserId')?.value)submit.textContent='Crear / asignar usuario';else submit.textContent=original}
+ }
 });
 document.addEventListener('click',async e=>{
  const edit=e.target.closest('[data-edit-access]');
- if(edit){const u=JSON.parse(edit.dataset.editAccess);document.getElementById('accessEmail').value=u.email||'';document.getElementById('accessNombre').value=u.nombre||'';document.getElementById('accessSede').value=u.sede||SEDE_ACTUAL;document.getElementById('accessRol').value=u.rol||'consulta';document.getElementById('accessCierre').value=String(!!u.puede_cierre_dia);document.getElementById('accessPassword').value='';return}
+ if(edit){
+  const u=JSON.parse(edit.dataset.editAccess);
+  document.getElementById('accessUserId').value=u.user_id||'';
+  const email=document.getElementById('accessEmail');email.value=u.email||'';email.readOnly=true;
+  document.getElementById('accessNombre').value=u.nombre||'';
+  const sede=document.getElementById('accessSede');sede.value=u.sede||SEDE_ACTUAL;sede.disabled=true;
+  document.getElementById('accessRol').value=u.rol||'consulta';
+  document.getElementById('accessCierre').value=String(!!u.puede_cierre_dia);
+  const pass=document.getElementById('accessPassword');pass.value='';pass.disabled=true;
+  const submit=document.getElementById('accessSubmitBtn');if(submit)submit.textContent='Guardar cambios';
+  const note=document.getElementById('userAccessModeNote');if(note)note.textContent='Editando un acceso existente. Correo, sede y contraseña quedan protegidos; puede modificar nombre, rol y permiso de cierre.';
+  document.getElementById('userAccessMessage').textContent='';
+  document.getElementById('accessNombre').focus();
+  return
+ }
  const tog=e.target.closest('[data-toggle-access]');
  if(tog&&esMaestro){try{await supabase.rpc('master_cambiar_estado_acceso',{p_user_id:tog.dataset.toggleAccess,p_sede:SEDE_ACTUAL,p_activo:tog.dataset.accessActive==='true'});await cargarUsuariosAcceso()}catch(err){alert('No se pudo cambiar el acceso: '+err.message)}}
 });
@@ -1982,3 +2043,4 @@ descargarExcelBtn.addEventListener('click',async()=>{
 
 supabase.channel('cronometros-operacion-v302').on('postgres_changes',{event:'*',schema:'public',table:'cronometros'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'historial_preparaciones'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'historial_actividades'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'colaboradores'},()=>{cargarTodo();if(esAdmin)cargarAdmin()}).on('postgres_changes',{event:'*',schema:'public',table:'actividades_catalogo'},()=>{cargarCatalogoActividades().then(()=>cargarTodo());if(esAdmin)cargarAdmin()}).on('postgres_changes',{event:'*',schema:'public',table:'ausencias_personal'},()=>{if(esAdmin)cargarAusenciasAdmin();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'metas_productividad'},()=>{cargarMetas();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'pausas_cronometros'},()=>{if(esAdmin)cargarAuditoria('pausas')}).on('postgres_changes',{event:'*',schema:'public',table:'cierres_diarios'},()=>{cargarEstadoCierre();if(esAdmin)cargarAuditoria('cierres')}).on('postgres_changes',{event:'*',schema:'public',table:'actividad_participaciones'},()=>{cargarTodo();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'preparacion_participaciones'},()=>{cargarTodo();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'errores_preparacion'},()=>{if(prepErrorContext)cargarErroresPreparacionExistentes()}).subscribe();
 try{await cargarMetas();await cargarTodo();await actualizarDashboard();if(esAdmin)await cargarAuditoria()}catch(e){document.getElementById('conexion').textContent='No se pudo cargar la información: '+e.message}
+

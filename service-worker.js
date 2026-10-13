@@ -1,4 +1,4 @@
-const CACHE_NAME='bia-control-v3.1.2';
+const CACHE_NAME='bia-control-v3.1.3-users';
 const APP_SHELL=[
   './','./index.html','./cronometros.html','./cba.html','./src.html','./cronometros.js','./supabase-config.js',
   './vendor/jszip.min.js','./pwa.js','./offline.html','./warehouse-ui.css',
@@ -29,3 +29,4 @@ self.addEventListener('fetch',event=>{
   })));
 });
 self.addEventListener('message',event=>{if(event.data==='SKIP_WAITING') self.skipWaiting();});
+
