@@ -576,8 +576,8 @@ async function verificarAdmin(userId){
  document.getElementById('viewerNotice').hidden=esAdmin||esMaestro;
  document.getElementById('roleBadge').textContent=esMaestro?'Maestro':esAdmin?`Administrador ${SEDE_ACTUAL}`:puedeCierre?'Consulta + Cierre':'Solo lectura';
  document.querySelectorAll('.admin-only-col').forEach(el=>el.hidden=!esAdmin);
- const masterSection=document.getElementById('userAccessAdminSection');if(masterSection)masterSection.hidden=!esMaestro;
- const sedeInput=document.getElementById('accessSede');if(sedeInput)sedeInput.value=SEDE_ACTUAL;
+ const masterSection=document.getElementById('userAccessAdminSection');if(masterSection)masterSection.hidden=!esAdmin;
+ const sedeInput=document.getElementById('accessSede');if(sedeInput){sedeInput.value=SEDE_ACTUAL;Array.from(sedeInput.options).forEach(o=>o.disabled=!esMaestro&&o.value!==SEDE_ACTUAL);sedeInput.disabled=!esMaestro;}
  renderActivosSuperiores();
  if(esAdmin)cargarAusenciasAdmin();
  await cargarEstadoCierre();
@@ -596,7 +596,7 @@ async function cargarAdmin(){
  const at=document.getElementById('activityCatalogTable');
  if(at)at.innerHTML=(acts||[]).map(a=>{const max=a.max_participantes==null?'Sin límite':a.max_participantes;const regla=a.min_participantes===1&&a.max_participantes===1?'1 persona':a.min_participantes===1&&a.max_participantes===2?'1 a 2':a.min_participantes===1&&a.max_participantes==null?'1 o más':a.min_participantes===2&&a.max_participantes==null?'Mínimo 2':`${a.min_participantes} a ${max}`;return `<tr><td>${esc(a.nombre)}</td><td>${esc(regla)}</td><td>${Number(a.orden||100)}</td><td><span class="${a.activo?'status-active':'status-inactive'}">${a.activo?'Activa':'Inactiva'}</span></td><td><button class="light" data-edit-activity='${JSON.stringify({id:a.id,nombre:a.nombre,min:a.min_participantes,max:a.max_participantes,orden:a.orden||100}).replace(/'/g,"&#39;")}'>Editar</button> <button class="${a.activo?'danger':'ok'}" data-toggle-activity="${a.id}" data-new-state="${!a.activo}">${a.activo?'Desactivar':'Activar'}</button> <button class="danger" data-delete-activity="${a.id}">Eliminar</button></td></tr>`}).join('');
 }
-const panel=document.getElementById('adminPanel');document.getElementById('adminOpenBtn').addEventListener('click',async()=>{panel.hidden=false;await cargarAdmin();if(esMaestro)await cargarUsuariosAcceso();panel.scrollIntoView({behavior:'smooth'})});document.getElementById('adminCloseBtn').addEventListener('click',()=>panel.hidden=true);document.getElementById('collabCancelEdit').addEventListener('click',()=>document.getElementById('collabForm').reset());
+const panel=document.getElementById('adminPanel');document.getElementById('adminOpenBtn').addEventListener('click',async()=>{panel.hidden=false;await cargarAdmin();if(esAdmin)await cargarUsuariosAcceso();panel.scrollIntoView({behavior:'smooth'})});document.getElementById('adminCloseBtn').addEventListener('click',()=>panel.hidden=true);document.getElementById('collabCancelEdit').addEventListener('click',()=>document.getElementById('collabForm').reset());
 document.getElementById('collabForm').addEventListener('submit',async e=>{e.preventDefault();const id=document.getElementById('collabId').value||null,nombre=document.getElementById('collabNombre').value.trim(),codigo=document.getElementById('collabCodigo').value.trim()||null;try{await rpc('guardar_colaborador_sede_v1',{p_id:id,p_nombre:nombre,p_codigo:codigo});e.target.reset();document.getElementById('collabId').value='';await Promise.all([cargarAdmin(),cargarTodo()]);document.getElementById('adminMessage').textContent='Colaborador guardado correctamente.'}catch(err){document.getElementById('adminMessage').textContent=err.message}});
 document.addEventListener('click',async e=>{const edit=e.target.closest('[data-edit-collab]');if(edit){const c=JSON.parse(edit.dataset.editCollab);document.getElementById('collabId').value=c.id;document.getElementById('collabNombre').value=c.nombre;document.getElementById('collabCodigo').value=c.codigo;return}const tog=e.target.closest('[data-toggle-collab]');if(tog){try{await rpc('cambiar_estado_colaborador_sede_v1',{p_id:tog.dataset.toggleCollab,p_activo:tog.dataset.newState==='true'});await Promise.all([cargarAdmin(),cargarTodo()])}catch(err){document.getElementById('adminMessage').textContent=err.message}}});
 const activityCatalogForm=document.getElementById('activityCatalogForm');
@@ -653,16 +653,16 @@ function limpiarUsuarioAcceso(){
  const f=document.getElementById('userAccessForm');if(!f)return;f.reset();
  const userId=document.getElementById('accessUserId');if(userId)userId.value='';
  const email=document.getElementById('accessEmail');if(email){email.readOnly=false;email.value=''}
- const pass=document.getElementById('accessPassword');if(pass){pass.disabled=true;pass.value='Cafemaya24*';pass.setAttribute('autocomplete','new-password')}
- const sede=document.getElementById('accessSede');if(sede){sede.disabled=false;sede.value=SEDE_ACTUAL}
+ const pass=document.getElementById('accessPassword');if(pass){pass.disabled=true;pass.value='';pass.setAttribute('autocomplete','new-password')}
+ const sede=document.getElementById('accessSede');if(sede){sede.disabled=!esMaestro;sede.value=SEDE_ACTUAL}
  document.getElementById('accessRol').value='consulta';
  document.getElementById('accessCierre').value='false';
  const submit=document.getElementById('accessSubmitBtn');if(submit)submit.textContent='Crear / asignar usuario';
- const note=document.getElementById('userAccessModeNote');if(note)note.textContent='Las cuentas nuevas usan Cafemaya24* y deben cambiarla al ingresar por primera vez.';
+ const note=document.getElementById('userAccessModeNote');if(note)note.textContent='Las cuentas nuevas reciben una contraseña temporal única, mostrada al crearlas, y deben cambiarla al ingresar.';
 }
 document.getElementById('accessCancel')?.addEventListener('click',limpiarUsuarioAcceso);
 async function cargarUsuariosAcceso(){
- if(!esMaestro)return;
+ if(!esAdmin)return;
  const {data,error}=await supabase.rpc('listar_usuarios_sede_v1',{p_sede:SEDE_ACTUAL});
  const body=document.getElementById('userAccessTable');if(!body)return;
  if(error){body.innerHTML=`<tr><td colspan="7">${esc(error.message)}</td></tr>`;return}
@@ -680,7 +680,7 @@ async function detalleErrorEdgeFunction(error){
  return String(detalle||error?.message||error||'Error desconocido').replace(/^Error:\s*/,'');
 }
 document.getElementById('userAccessForm')?.addEventListener('submit',async e=>{
- e.preventDefault();if(!esMaestro)return;
+ e.preventDefault();if(!esAdmin)return;
  const msg=document.getElementById('userAccessMessage');
  const editingUserId=document.getElementById('accessUserId')?.value||'';
  const body={
@@ -713,7 +713,7 @@ document.getElementById('userAccessForm')?.addEventListener('submit',async e=>{
    if(r.error)throw r.error;
    data={created:false,updated:!!editingUserId};
    if(body.password){
-    const reset=await supabase.functions.invoke('admin-users',{body:{action:'reset_password',user_id:editingUserId,password:body.password}});
+    const reset=await supabase.functions.invoke('admin-users',{body:{action:'reset_password',user_id:editingUserId,sede:body.sede,password:body.password}});
     if(reset.error)throw new Error('Acceso guardado; contraseña sin cambiar: '+await detalleErrorEdgeFunction(reset.error));
     if(reset.data?.error)throw new Error(reset.data.error);
    }
@@ -724,7 +724,7 @@ document.getElementById('userAccessForm')?.addEventListener('submit',async e=>{
    data=r.data||{};
   }
 
-  msg.textContent=data?.created?'Usuario nuevo creado y asignado correctamente.':editingUserId?'Usuario actualizado correctamente.':'Acceso asignado correctamente.';
+  msg.textContent=data?.created?'Usuario nuevo creado. Contraseña temporal: '+data.initial_password+' — compártala con el usuario; debe cambiarla al ingresar.':editingUserId?'Usuario actualizado correctamente.':'Acceso asignado correctamente.';
   limpiarUsuarioAcceso();
   await cargarUsuariosAcceso();
  }catch(err){
@@ -736,7 +736,7 @@ document.getElementById('userAccessForm')?.addEventListener('submit',async e=>{
 });
 document.addEventListener('click',async e=>{
  const edit=e.target.closest('[data-edit-access]');
- if(edit){
+ if(edit&&esAdmin){
   const u=JSON.parse(edit.dataset.editAccess);
   document.getElementById('accessUserId').value=u.user_id||'';
   const email=document.getElementById('accessEmail');email.value=u.email||'';email.readOnly=true;
@@ -752,7 +752,7 @@ document.addEventListener('click',async e=>{
   return
  }
  const tog=e.target.closest('[data-toggle-access]');
- if(tog&&esMaestro){try{await supabase.rpc('master_cambiar_estado_acceso',{p_user_id:tog.dataset.toggleAccess,p_sede:SEDE_ACTUAL,p_activo:tog.dataset.accessActive==='true'});await cargarUsuariosAcceso()}catch(err){alert('No se pudo cambiar el acceso: '+err.message)}}
+ if(tog&&esAdmin){try{const {error}=await supabase.rpc('master_cambiar_estado_acceso',{p_user_id:tog.dataset.toggleAccess,p_sede:SEDE_ACTUAL,p_activo:tog.dataset.accessActive==='true'});if(error)throw error;await cargarUsuariosAcceso()}catch(err){alert('No se pudo cambiar el acceso: '+err.message)}}
 });
 
 // ===== CONTROL DE AUSENCIAS V2.6.5 =====

@@ -35,24 +35,41 @@ Deno.serve(async (req) => {
     const { data: callerData, error: callerError } = await admin.auth.getUser(token)
     if (callerError || !callerData.user) return json({ error: 'AUTH_REQUIRED', message: callerError?.message || 'Sesión no válida.' }, 401)
 
-    const callerEmail = (callerData.user.email || '').trim().toLowerCase()
-    
+
     let body: any = null
     try { body = await req.json() } catch { return json({ error: 'JSON_INVALIDO' }, 400) }
     if (body?.action === 'change_own_password') {
       const password = String(body.password || '')
-      if (!passwordValid(password) || password === 'Cafemaya24*') return json({error:'CONTRASENA_INVALIDA',message:'La contraseña debe tener al menos 8 caracteres, mayúscula, minúscula, número y símbolo.'},400)
+      if (!passwordValid(password)) return json({error:'CONTRASENA_INVALIDA',message:'La contraseña debe tener al menos 8 caracteres, mayúscula, minúscula, número y símbolo.'},400)
       const { error } = await admin.auth.admin.updateUserById(callerData.user.id, {
         password, app_metadata: { ...callerData.user.app_metadata, must_change_password: false },
       })
       if (error) return json({error:'AUTH_UPDATE_PASSWORD',message:error.message},400)
       return json({ok:true})
     }
-    if (!['javierh@biabrands.co','fesicars@gmail.com'].includes(callerEmail) || callerData.user.app_metadata?.must_change_password) return json({ error: 'SOLO_USUARIO_MAESTRO' }, 403)
+    const caller = createClient(url, Deno.env.get('SUPABASE_ANON_KEY') || '', {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+      auth: { autoRefreshToken: false, persistSession: false },
+    })
+    const requestedSede = String(body?.sede || '').trim().toUpperCase()
+    if (!['SPS', 'CBA', 'SRC'].includes(requestedSede)) return json({ error: 'SEDE_INVALIDA' }, 400)
+    const { data: authorized, error: permissionError } = await caller.rpc('usuario_es_admin_sede', { p_sede: requestedSede })
+    if (permissionError) return json({ error: 'PERMISOS_NO_DISPONIBLES' }, 500)
+    if (authorized !== true) return json({ error: 'SOLO_ADMINISTRADOR_SEDE' }, 403)
     if (body?.action === 'reset_password') {
       const userId=String(body.user_id || '')
       const password=String(body.password || '')
       if (!userId || !passwordValid(password)) return json({error:'CONTRASENA_INVALIDA',message:'La contraseña debe tener al menos 8 caracteres, mayúscula, minúscula, número y símbolo.'},400)
+      const { data: isMaster, error: masterError } = await caller.rpc('usuario_es_maestro')
+      if (masterError) return json({ error: 'PERMISOS_NO_DISPONIBLES' }, 500)
+      if (!isMaster) {
+        const { data: access, error: accessError } = await admin.from('usuarios_sedes').select('sede').eq('user_id', userId).eq('sede', requestedSede).maybeSingle()
+        if (accessError) return json({ error: 'PERMISOS_NO_DISPONIBLES' }, 500)
+        if (!access) return json({ error: 'USUARIO_FUERA_DE_SEDE' }, 403)
+        const { data: targetMaster, error: targetError } = await admin.auth.admin.getUserById(userId)
+        if (targetError || !targetMaster.user) return json({ error: 'USUARIO_NO_EXISTE' }, 404)
+        if (['javierh@biabrands.co','fesicars@gmail.com'].includes((targetMaster.user.email || '').toLowerCase())) return json({ error: 'SOLO_USUARIO_MAESTRO' }, 403)
+      }
       const {data:target,error:lookup}=await admin.auth.admin.getUserById(userId)
       if(lookup || !target.user) return json({error:'USUARIO_NO_EXISTE'},404)
       const {error}=await admin.auth.admin.updateUserById(userId,{password,app_metadata:{...target.user.app_metadata,must_change_password:true}})
@@ -67,7 +84,7 @@ Deno.serve(async (req) => {
     const nombre = String(body.nombre || '').trim()
     const sede = String(body.sede || '').trim().toUpperCase()
     const rol = String(body.rol || 'consulta').trim().toLowerCase()
-    const password = 'Cafemaya24*'
+    const password = 'Aa1!' + Array.from(crypto.getRandomValues(new Uint8Array(18)), b => b.toString(16).padStart(2, '0')).join('')
 
     if (!email || !email.includes('@')) return json({ error: 'EMAIL_INVALIDO' }, 400)
     if (!['SPS', 'CBA', 'SRC'].includes(sede)) return json({ error: 'SEDE_INVALIDA' }, 400)
@@ -113,7 +130,7 @@ Deno.serve(async (req) => {
       return json({ error: 'USUARIOS_SEDES_UPSERT', message: upsertError.message, details: upsertError.details || null }, 400)
     }
 
-    return json({ ok: true, created, user_id: user.id, email, sede, rol })
+    return json({ ok: true, created, initial_password: created ? password : undefined, user_id: user.id, email, sede, rol })
   } catch (e) {
     console.error('admin-users unexpected error', e)
     return json({ error: 'EDGE_UNEXPECTED', message: String((e as any)?.message || e) }, 500)
