@@ -674,7 +674,7 @@ async function detalleErrorEdgeFunction(error){
   const ctx=error?.context;
   if(ctx&&typeof ctx.clone==='function'){
    const resp=ctx.clone();
-   try{const j=await resp.json();detalle=j?.error||j?.message||j?.code||''}catch(_){try{detalle=await resp.text()}catch(__){}}
+   try{const j=await resp.json();detalle=j?.message||j?.error||j?.code||''}catch(_){try{detalle=await resp.text()}catch(__){}}
   }
  }catch(_){}
  return String(detalle||error?.message||error||'Error desconocido').replace(/^Error:\s*/,'');
@@ -696,6 +696,7 @@ document.getElementById('userAccessForm')?.addEventListener('submit',async e=>{
  const original=submit?.textContent||'';
  try{
   if(submit)submit.disabled=true;
+  if(editingUserId && body.password && !(body.password.length>=8 && /[a-z]/.test(body.password) && /[A-Z]/.test(body.password) && /[0-9]/.test(body.password) && /[^a-zA-Z0-9]/.test(body.password)))throw new Error('La contraseña debe tener al menos 8 caracteres, mayúscula, minúscula, número y símbolo.');
   msg.textContent=editingUserId?'Guardando cambios del usuario...':'Procesando usuario...';
   let data=null;
 
@@ -743,7 +744,7 @@ document.addEventListener('click',async e=>{
   const sede=document.getElementById('accessSede');sede.value=u.sede||SEDE_ACTUAL;sede.disabled=true;
   document.getElementById('accessRol').value=u.rol||'consulta';
   document.getElementById('accessCierre').value=String(!!u.puede_cierre_dia);
-  const pass=document.getElementById('accessPassword');pass.value='';pass.disabled=false;pass.placeholder='Vacío para conservar la contraseña';
+  const pass=document.getElementById('accessPassword');pass.value='';pass.disabled=false;pass.placeholder='Vacío para conservar; nueva con Aa1!';
   const submit=document.getElementById('accessSubmitBtn');if(submit)submit.textContent='Guardar cambios';
   const note=document.getElementById('userAccessModeNote');if(note)note.textContent='Editando un acceso existente. Puede modificar nombre, rol y contraseña. Deje la contraseña vacía para conservarla; si la cambia, el usuario deberá sustituirla al ingresar.';
   document.getElementById('userAccessMessage').textContent='';

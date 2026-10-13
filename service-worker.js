@@ -1,4 +1,4 @@
-const CACHE_NAME='bia-control-v3.1.4-passwords';
+const CACHE_NAME='bia-control-v3.1.5-password-validation';
 const APP_SHELL=[
   './','./index.html','./cambiar-password.html','./cronometros.html','./cba.html','./src.html','./cronometros.js','./supabase-config.js',
   './vendor/jszip.min.js','./pwa.js','./offline.html','./warehouse-ui.css',

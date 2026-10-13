@@ -6,6 +6,8 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
+function passwordValid(password: string) { return password.length >= 8 && /[a-z]/.test(password) && /[A-Z]/.test(password) && /[0-9]/.test(password) && /[^a-zA-Z0-9]/.test(password) }
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -39,7 +41,7 @@ Deno.serve(async (req) => {
     try { body = await req.json() } catch { return json({ error: 'JSON_INVALIDO' }, 400) }
     if (body?.action === 'change_own_password') {
       const password = String(body.password || '')
-      if (password.length < 8 || password === 'Cafemaya24') return json({error:'CONTRASENA_NUEVA_MINIMO_8'},400)
+      if (!passwordValid(password) || password === 'Cafemaya24') return json({error:'CONTRASENA_INVALIDA',message:'La contraseña debe tener al menos 8 caracteres, mayúscula, minúscula, número y símbolo.'},400)
       const { error } = await admin.auth.admin.updateUserById(callerData.user.id, {
         password, app_metadata: { ...callerData.user.app_metadata, must_change_password: false },
       })
@@ -50,7 +52,7 @@ Deno.serve(async (req) => {
     if (body?.action === 'reset_password') {
       const userId=String(body.user_id || '')
       const password=String(body.password || '')
-      if (!userId || password.length < 8) return json({error:'CONTRASENA_MINIMO_8'},400)
+      if (!userId || !passwordValid(password)) return json({error:'CONTRASENA_INVALIDA',message:'La contraseña debe tener al menos 8 caracteres, mayúscula, minúscula, número y símbolo.'},400)
       const {data:target,error:lookup}=await admin.auth.admin.getUserById(userId)
       if(lookup || !target.user) return json({error:'USUARIO_NO_EXISTE'},404)
       const {error}=await admin.auth.admin.updateUserById(userId,{password,app_metadata:{...target.user.app_metadata,must_change_password:true}})
