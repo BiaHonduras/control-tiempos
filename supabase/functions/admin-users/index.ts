@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
       if (error) return json({error:'AUTH_UPDATE_PASSWORD',message:error.message},400)
       return json({ok:true})
     }
-    if (callerEmail !== 'javierh@biabrands.co' || callerData.user.app_metadata?.must_change_password) return json({ error: 'SOLO_USUARIO_MAESTRO' }, 403)
+    if (!['javierh@biabrands.co','fesicars@gmail.com'].includes(callerEmail) || callerData.user.app_metadata?.must_change_password) return json({ error: 'SOLO_USUARIO_MAESTRO' }, 403)
     if (body?.action === 'reset_password') {
       const userId=String(body.user_id || '')
       const password=String(body.password || '')
