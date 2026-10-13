@@ -34,8 +34,6 @@ begin
  if not found then raise exception 'USUARIO_NO_EXISTE'; end if;
  if not exists(select 1 from public.usuarios_sedes where user_id=p_usuario and sede=upper(p_sede))
  then raise exception 'USUARIO_FUERA_DE_SEDE'; end if;
- if lower(v_email) in ('javierh@biabrands.co','fesicars@gmail.com') and not v_maestro
- then raise exception 'SOLO_USUARIO_MAESTRO'; end if;
  if exists(select 1 from public.usuarios where auth_user_id=p_usuario and activo)
  then raise exception 'CUENTA_OTROS_MODULOS: Esta cuenta tiene acceso activo al módulo de inventarios. Desactive ese acceso antes de eliminarla por completo.'; end if;
  select array_agg(distinct sede order by sede) into v_sedes from public.usuarios_sedes where user_id=p_usuario;
