@@ -733,3 +733,31 @@ textarea {
     grid-template-columns: minmax(0, 1fr) !important;
   }
 }
+
+/* Site navigation shares the operation bar, aligned to its right edge. */
+.section-nav { flex-wrap: nowrap !important; overflow-x: auto !important; }
+.section-nav > a { flex: 0 0 auto; white-space: nowrap; }
+.section-nav > .area-switcher {
+  display: flex !important;
+  align-items: center;
+  flex: 0 0 auto !important;
+  flex-wrap: nowrap !important;
+  gap: 2px;
+  order: 0 !important;
+  width: auto !important;
+  margin: 0 0 0 auto !important;
+  padding: 0 0 0 12px !important;
+  border: 0 !important;
+  border-left: 1px solid rgba(255,255,255,.18) !important;
+  overflow: visible !important;
+}
+.section-nav > .area-switcher a {
+  flex: 0 0 auto !important;
+  min-width: 0 !important;
+  white-space: nowrap;
+}
+.section-nav > .area-switcher a.current-area {
+  background: rgba(255,255,255,.12) !important;
+  color: #fff !important;
+  border-bottom-color: #76a7ff !important;
+}

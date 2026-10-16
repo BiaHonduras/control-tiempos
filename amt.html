@@ -1531,7 +1531,7 @@ body{
 
 </style>
 
-  <link rel="stylesheet" href="./warehouse-ui.css?v=3.1.1">
+  <link rel="stylesheet" href="./warehouse-ui.css?v=3.1.13">
   <link rel="icon" href="./icons/warehouse.svg" type="image/svg+xml">
   <link rel="manifest" href="./manifest.webmanifest">
   <meta name="theme-color" content="#17305c">
@@ -1546,13 +1546,7 @@ body{
     <img class="header-logo" src="./assets/bia-honduras-logo.png" alt="BIA Honduras">
     <div class="brand-copy"><div class="brand-eyebrow">BIA HONDURAS · OPERACIONES</div><h1>Control de Tiempos · AMT</h1><div>Productividad, preparación y actividades en tiempo real</div><span class="page-area-badge">Sede AMT</span></div>
   </div>
-  <div class="user"><nav class="area-switcher" aria-label="Páginas operativas">
-  <a data-area-link="sps" href="./cronometros.html">SPS</a>
-  <a data-area-link="cba" href="./cba.html">CBA</a>
-  <a data-area-link="src" href="./src.html">SRC</a>
-  <a data-area-link="tgu" href="./tgu.html">TGU</a>
-  <a data-area-link="amt" class="current-area" href="./amt.html">AMT</a>
-</nav><span id="networkStatus" class="network"></span><span id="userAvatar" class="user-avatar">BI</span><button id="installApp" class="install-btn" hidden>Instalar app</button><span id="roleBadge" class="role-badge">Verificando rol…</span><span id="userEmail" class="user-email"></span><button id="adminOpenBtn" class="light" type="button" hidden>Administración</button><button onclick="window.salir()">Cerrar sesión</button></div>
+  <div class="user"><span id="networkStatus" class="network"></span><span id="userAvatar" class="user-avatar">BI</span><button id="installApp" class="install-btn" hidden>Instalar app</button><span id="roleBadge" class="role-badge">Verificando rol…</span><span id="userEmail" class="user-email"></span><button id="adminOpenBtn" class="light" type="button" hidden>Administración</button><button onclick="window.salir()">Cerrar sesión</button></div>
 </header>
 
 <div class="container">
@@ -1571,6 +1565,13 @@ body{
   <a href="#reportesExcel"><span>📄 Excel</span></a>
   <a class="admin-nav" href="#absenceAdminSection"><span>👥 Ausencias</span></a>
   <a class="admin-nav" href="#auditoriaAdminSection"><span>🔎 Auditoría</span></a>
+<div class="area-switcher" role="group" aria-label="Sedes">
+  <a data-area-link="sps" href="./cronometros.html">SPS</a>
+  <a data-area-link="cba" href="./cba.html">CBA</a>
+  <a data-area-link="src" href="./src.html">SRC</a>
+  <a data-area-link="tgu" href="./tgu.html">TGU</a>
+  <a data-area-link="amt" class="current-area" href="./amt.html">AMT</a>
+</div>
 </nav>
 
   

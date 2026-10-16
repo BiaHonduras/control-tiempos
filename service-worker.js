@@ -1,7 +1,7 @@
-const CACHE_NAME='bia-control-v3.1.12-cinco-sedes';
+const CACHE_NAME='bia-control-v3.1.13-sedes-barra';
 const APP_SHELL=[
   './','./index.html','./cambiar-password.html','./cronometros.html','./cba.html','./src.html','./tgu.html','./amt.html','./cronometros.js','./cronometros.js?v=20261016-sedes','./supabase-config.js',
-  './vendor/jszip.min.js','./pwa.js','./offline.html','./warehouse-ui.css',
+  './vendor/jszip.min.js','./pwa.js','./offline.html','./warehouse-ui.css','./warehouse-ui.css?v=3.1.13',
   './assets/bia-honduras-logo.png','./manifest.webmanifest',
   './icons/warehouse.svg','./icons/warehouse-192.png','./icons/warehouse-512.png','./icons/warehouse-maskable-512.png'
 ];
