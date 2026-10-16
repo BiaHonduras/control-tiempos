@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     })
     const requestedSede = String(body?.sede || '').trim().toUpperCase()
-    if (!['SPS', 'CBA', 'SRC'].includes(requestedSede)) return json({ error: 'SEDE_INVALIDA' }, 400)
+    if (!['SPS', 'CBA', 'SRC', 'TGU', 'AMT'].includes(requestedSede)) return json({ error: 'SEDE_INVALIDA' }, 400)
     const { data: authorized, error: permissionError } = await caller.rpc('usuario_es_admin_sede', { p_sede: requestedSede })
     if (permissionError) return json({ error: 'PERMISOS_NO_DISPONIBLES' }, 500)
     if (authorized !== true) return json({ error: 'SOLO_ADMINISTRADOR_SEDE' }, 403)
@@ -100,7 +100,7 @@ Deno.serve(async (req) => {
     const password = 'Aa1!' + Array.from(crypto.getRandomValues(new Uint8Array(18)), b => b.toString(16).padStart(2, '0')).join('')
 
     if (!email || !email.includes('@')) return json({ error: 'EMAIL_INVALIDO' }, 400)
-    if (!['SPS', 'CBA', 'SRC'].includes(sede)) return json({ error: 'SEDE_INVALIDA' }, 400)
+    if (!['SPS', 'CBA', 'SRC', 'TGU', 'AMT'].includes(sede)) return json({ error: 'SEDE_INVALIDA' }, 400)
     if (!['admin', 'consulta'].includes(rol)) return json({ error: 'ROL_INVALIDO' }, 400)
 
     let user: any = null

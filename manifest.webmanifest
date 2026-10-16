@@ -1,5 +1,5 @@
 {
-  "name": "BIA Control de Tiempos · SPS CBA SRC",
+  "name": "BIA Control de Tiempos · SPS CBA SRC TGU AMT",
   "short_name": "BIA Tiempos",
   "description": "Control de preparación de pedidos y actividades de bodega.",
   "id": "./index.html",
@@ -99,6 +99,30 @@
       "name": "SRC",
       "short_name": "SRC",
       "url": "./src.html",
+      "icons": [
+        {
+          "src": "./icons/warehouse-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "TGU",
+      "short_name": "TGU",
+      "url": "./tgu.html",
+      "icons": [
+        {
+          "src": "./icons/warehouse-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "AMT",
+      "short_name": "AMT",
+      "url": "./amt.html",
       "icons": [
         {
           "src": "./icons/warehouse-192.png",

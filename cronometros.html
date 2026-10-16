@@ -1550,6 +1550,8 @@ body{
   <a data-area-link="sps" class="current-area" href="./cronometros.html">SPS</a>
   <a data-area-link="cba" href="./cba.html">CBA</a>
   <a data-area-link="src" href="./src.html">SRC</a>
+  <a data-area-link="tgu" href="./tgu.html">TGU</a>
+  <a data-area-link="amt" href="./amt.html">AMT</a>
 </nav><span id="networkStatus" class="network"></span><span id="userAvatar" class="user-avatar">BI</span><button id="installApp" class="install-btn" hidden>Instalar app</button><span id="roleBadge" class="role-badge">Verificando rol…</span><span id="userEmail" class="user-email"></span><button id="adminOpenBtn" class="light" type="button" hidden>Administración</button><button onclick="window.salir()">Cerrar sesión</button></div>
 </header>
 
@@ -1602,7 +1604,7 @@ body{
     </div>
     <div id="userAccessAdminSection" class="admin-subsection master-only-section" hidden>
       <div class="section-head" style="margin-top:22px">
-        <div><h3>Usuarios y accesos</h3><div class="note">Los administradores pueden crear cuentas y gestionar los accesos de su sede. Los usuarios maestros pueden asignar acceso a SPS, CBA o SRC.</div></div>
+        <div><h3>Usuarios y accesos</h3><div class="note">Los administradores pueden crear cuentas y gestionar los accesos de su sede. Los usuarios maestros pueden asignar acceso a SPS, CBA, SRC, TGU o AMT.</div></div>
         <span class="badge">Maestro</span>
       </div>
       <form id="userAccessForm" class="admin-form user-access-form" autocomplete="off">
@@ -1610,7 +1612,7 @@ body{
         <div><label>Correo</label><input id="accessEmail" type="email" required autocomplete="off" placeholder="usuario@biabrands.co"></div>
         <div><label>Nombre</label><input id="accessNombre" maxlength="120" autocomplete="off" placeholder="Nombre del usuario"></div>
         <div><label>Contraseña temporal</label><input id="accessPassword" type="password" value="" disabled minlength="8" autocomplete="new-password" placeholder="Se genera al crear la cuenta"></div>
-        <div><label>Sede</label><select id="accessSede"><option value="SPS">SPS</option><option value="CBA">CBA</option><option value="SRC">SRC</option></select></div>
+        <div><label>Sede</label><select id="accessSede"><option value="SPS">SPS</option><option value="CBA">CBA</option><option value="SRC">SRC</option><option value="TGU">TGU</option><option value="AMT">AMT</option></select></div>
         <div><label>Rol</label><select id="accessRol"><option value="consulta">Solo consulta</option><option value="admin">Administrador</option></select></div>
         <div><label>Permiso cierre</label><select id="accessCierre"><option value="false">No</option><option value="true">Sí</option></select></div>
         <div class="admin-form-actions"><button id="accessSubmitBtn" class="primary" type="submit">Crear / asignar usuario</button><button id="accessCancel" class="light" type="button">Limpiar</button></div>
@@ -1969,7 +1971,7 @@ body{
 <footer class="app-footer"><img src="./assets/bia-honduras-logo.png" alt="BIA Honduras"> Control de Tiempos · PWA v3.1.2</footer>
 <script src="./vendor/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
-<script type="module" src="./cronometros.js"></script>
+<script type="module" src="./cronometros.js?v=20261016-sedes"></script>
 <script src="./pwa.js" defer></script>
 </body></html>
 

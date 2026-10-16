@@ -348,7 +348,7 @@ function datosFormulario(cat){
 }
 function mostrarConflicto(cat,msg){const el=document.getElementById(`conflict-${cat==='preparacion'?'prep':'act'}`);if(!el)return;el.textContent=msg;el.style.display='block';setTimeout(()=>el.style.display='none',6000)}
 async function rpc(nombre,args={}){const payload={...args,p_sede:SEDE_ACTUAL};const {data,error}=await supabase.rpc(nombre,payload);if(error)throw error;return data}
-function paginaSede(s){return s==='CBA'?'./cba.html':s==='SRC'?'./src.html':'./cronometros.html'}
+function paginaSede(s){return s==='CBA'?'./cba.html':s==='SRC'?'./src.html':s==='TGU'?'./tgu.html':s==='AMT'?'./amt.html':'./cronometros.html'}
 async function iniciar(cat){
  if(!esAdmin)throw new Error('SOLO_ADMINISTRADOR');
  const datos=datosFormulario(cat);
