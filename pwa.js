@@ -34,7 +34,7 @@ window.addEventListener('appinstalled',()=>{if(installButton) installButton.hidd
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{
-      const registration=await navigator.serviceWorker.register('./service-worker.js',{scope:'./'});
+      const registration=await navigator.serviceWorker.register('./service-worker.js',{scope:'./',updateViaCache:'none'});
       registration.addEventListener('updatefound',()=>{
         const worker=registration.installing;
         if(!worker) return;
