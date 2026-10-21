@@ -1,4 +1,4 @@
-const CACHE_NAME='bia-control-v3.1.13-sedes-barra';
+const CACHE_NAME='bia-control-v3.1.14-shared-favicon';
 const APP_SHELL=[
   './','./index.html','./cambiar-password.html','./cronometros.html','./cba.html','./src.html','./tgu.html','./amt.html','./cronometros.js','./cronometros.js?v=20261016-sedes','./supabase-config.js',
   './vendor/jszip.min.js','./pwa.js','./offline.html','./warehouse-ui.css','./warehouse-ui.css?v=3.1.13',

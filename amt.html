@@ -1532,13 +1532,13 @@ body{
 </style>
 
   <link rel="stylesheet" href="./warehouse-ui.css?v=3.1.13">
-  <link rel="icon" href="./icons/warehouse.svg" type="image/svg+xml">
+  <link rel="icon" type="image/png" href="https://biahonduras.github.io/devoluciones/favicon.png?v=2">
   <link rel="manifest" href="./manifest.webmanifest">
   <meta name="theme-color" content="#17305c">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="apple-touch-icon" href="./icons/warehouse-192.png">
+  <link rel="apple-touch-icon" type="image/png" href="https://biahonduras.github.io/devoluciones/favicon.png?v=2">
 </head>
 <body data-sede="AMT">
 <header class="app-header">
@@ -1614,7 +1614,7 @@ body{
         <div><label>Nombre</label><input id="accessNombre" maxlength="120" autocomplete="off" placeholder="Nombre del usuario"></div>
         <div><label>Contraseña temporal</label><input id="accessPassword" type="password" value="" disabled minlength="8" autocomplete="new-password" placeholder="Se genera al crear la cuenta"></div>
         <div><label>Sede</label><select id="accessSede"><option value="SPS">SPS</option><option value="CBA">CBA</option><option value="SRC">SRC</option><option value="TGU">TGU</option><option value="AMT">AMT</option></select></div>
-        <div><label>Rol</label><select id="accessRol"><option value="consulta">Solo consulta</option><option value="admin">Administrador</option></select></div>
+        <div><label>Rol</label><select id="accessRol"><option value="consulta">Solo consulta</option><option value="operador">Operador (Contenedores)</option><option value="admin">Administrador</option></select></div>
         <div><label>Permiso cierre</label><select id="accessCierre"><option value="false">No</option><option value="true">Sí</option></select></div>
         <div class="admin-form-actions"><button id="accessSubmitBtn" class="primary" type="submit">Crear / asignar usuario</button><button id="accessCancel" class="light" type="button">Limpiar</button></div>
       </form>
