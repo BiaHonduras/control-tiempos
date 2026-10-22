@@ -1454,7 +1454,7 @@ document.addEventListener('click',e=>{
 });
 
 setInterval(()=>{timers.forEach(t=>{const pref=t.categoria==='preparacion'?'prep':'act',el=document.getElementById(`timer-${pref}`);if(el&&((t.categoria==='preparacion'&&participantesIds(t).some(id=>idsPreparacionSeleccionados().includes(id)))||(t.categoria==='actividad'&&participantesIds(t).some(id=>idsActividadSeleccionados().includes(id)))))el.textContent=fmt(segundosActuales(t));const d=document.querySelector(`[data-dock-clock="${t.id}"]`);if(d)d.textContent=fmt(segundosActuales(t))})},1000);
-const ses=await obtenerSesion();if(!ses.ok||!ses.session)location.replace('./index.html');else{document.getElementById('userEmail').textContent=ses.session.user.email||'Usuario';await verificarAdmin(ses.session.user.id)}
+const ses=await obtenerSesion();if(!ses.ok||!ses.session)location.replace('./index.html');else{const {data:profile}=await supabase.rpc('bia_profile');const shortName=profile?.nombre_corto?.trim()||'Sin nombre corto';document.getElementById('userEmail').textContent=shortName;const avatar=document.getElementById('userAvatar');if(avatar)avatar.textContent=shortName.split(/\s+/).slice(0,2).map(n=>n[0]).join('');await verificarAdmin(ses.session.user.id)}
 window.salir=async()=>{await cerrarSesion();location.replace('./index.html')};
 
 // ===== METAS, DASHBOARD, CIERRE Y AUDITORÍA =====
