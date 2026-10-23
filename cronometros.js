@@ -2,6 +2,8 @@ import { supabase, obtenerSesion, cerrarSesion } from './supabase-config.js';
 
 let colaboradores=[];
 let esAdmin=false;
+let puedeCatalogos=false;
+let puedeEliminar=false;
 let puedeCierre=false;
 let usuarioActualId=null;
 const SEDE_ACTUAL=(document.body?.dataset?.sede||'SPS').toUpperCase();
@@ -561,8 +563,10 @@ async function verificarAdmin(userId){
  const acc=Array.isArray(data)?data[0]:data;
  esMaestro=acc?.es_maestro===true;
  esAdmin=esMaestro||acc?.rol==='admin';
+ puedeCatalogos=acc?.can_manage_catalogs===true;puedeEliminar=acc?.can_delete===true;
  puedeCierre=esAdmin||acc?.puede_cierre_dia===true;
  sedesPermitidas=Array.isArray(acc?.sedes)?acc.sedes:[];
+ if(!acc?.permitido&&!acc?.app_access){location.replace('./intranet.html');return}
  if(!acc?.permitido){
    const destino=sedesPermitidas[0];
    if(destino&&destino!==SEDE_ACTUAL){location.replace(paginaSede(destino));return}
@@ -572,21 +576,25 @@ async function verificarAdmin(userId){
  document.querySelectorAll('[data-area-link]').forEach(a=>{const s=(a.dataset.areaLink||'').toUpperCase();a.hidden=!esMaestro&&!sedesPermitidas.includes(s)});
  document.body.classList.toggle('viewer-mode',!esAdmin);
  document.body.classList.toggle('can-close',puedeCierre);
- document.getElementById('adminOpenBtn').hidden=!esAdmin&&!esMaestro;
+ document.body.classList.toggle('catalog-manager',puedeCatalogos);
+ document.body.classList.toggle('data-administrator',puedeEliminar);
+ document.getElementById('metasAdminSection').hidden=!puedeEliminar;
+ for(const id of ['absenceAdminSection','cierreAdminSection']){const el=document.getElementById(id);if(el)el.hidden=!puedeCatalogos}
+ document.getElementById('adminOpenBtn').hidden=!puedeCatalogos;
  document.getElementById('viewerNotice').hidden=esAdmin||esMaestro;
  document.getElementById('roleBadge').textContent=esMaestro?'Maestro':esAdmin?`Administrador ${SEDE_ACTUAL}`:puedeCierre?'Consulta + Cierre':'Solo lectura';
  document.querySelectorAll('.admin-only-col').forEach(el=>el.hidden=!esAdmin);
- const masterSection=document.getElementById('userAccessAdminSection');if(masterSection)masterSection.hidden=!esAdmin;
+ const masterSection=document.getElementById('userAccessAdminSection');if(masterSection)masterSection.hidden=true;
  const sedeInput=document.getElementById('accessSede');if(sedeInput){sedeInput.value=SEDE_ACTUAL;Array.from(sedeInput.options).forEach(o=>o.disabled=!esMaestro&&o.value!==SEDE_ACTUAL);sedeInput.disabled=!esMaestro;}
  renderActivosSuperiores();
- if(esAdmin)cargarAusenciasAdmin();
+ if(puedeCatalogos)cargarAusenciasAdmin();
  await cargarEstadoCierre();
 }
 async function cargarAdmin(){
- if(!esAdmin&&!esMaestro)return;
+ if(!puedeCatalogos)return;
  const [{data,error},{data:usuarios,error:eu},{data:acts,error:ea}]=await Promise.all([
   supabase.from('colaboradores').select('*').eq('sede',SEDE_ACTUAL).order('activo',{ascending:false}).order('orden').order('nombre'),
-  supabase.rpc('listar_usuarios_sede_v1',{p_sede:SEDE_ACTUAL}),
+  Promise.resolve({data:[],error:null}),
   supabase.from('actividades_catalogo').select('*').eq('sede',SEDE_ACTUAL).order('activo',{ascending:false}).order('orden').order('nombre')
  ]);
  if(error||eu||ea)throw error||eu||ea;
@@ -596,7 +604,7 @@ async function cargarAdmin(){
  const at=document.getElementById('activityCatalogTable');
  if(at)at.innerHTML=(acts||[]).map(a=>{const max=a.max_participantes==null?'Sin límite':a.max_participantes;const regla=a.min_participantes===1&&a.max_participantes===1?'1 persona':a.min_participantes===1&&a.max_participantes===2?'1 a 2':a.min_participantes===1&&a.max_participantes==null?'1 o más':a.min_participantes===2&&a.max_participantes==null?'Mínimo 2':`${a.min_participantes} a ${max}`;return `<tr><td>${esc(a.nombre)}</td><td>${esc(regla)}</td><td>${Number(a.orden||100)}</td><td><span class="${a.activo?'status-active':'status-inactive'}">${a.activo?'Activa':'Inactiva'}</span></td><td><button class="light" data-edit-activity='${JSON.stringify({id:a.id,nombre:a.nombre,min:a.min_participantes,max:a.max_participantes,orden:a.orden||100}).replace(/'/g,"&#39;")}'>Editar</button> <button class="${a.activo?'danger':'ok'}" data-toggle-activity="${a.id}" data-new-state="${!a.activo}">${a.activo?'Desactivar':'Activar'}</button> <button class="danger" data-delete-activity="${a.id}">Eliminar</button></td></tr>`}).join('');
 }
-const panel=document.getElementById('adminPanel');document.getElementById('adminOpenBtn').addEventListener('click',async()=>{panel.hidden=false;await cargarAdmin();if(esAdmin)await cargarUsuariosAcceso();panel.scrollIntoView({behavior:'smooth'})});document.getElementById('adminCloseBtn').addEventListener('click',()=>panel.hidden=true);document.getElementById('collabCancelEdit').addEventListener('click',()=>document.getElementById('collabForm').reset());
+const panel=document.getElementById('adminPanel');document.getElementById('adminOpenBtn').addEventListener('click',async()=>{if(!puedeCatalogos)return;panel.hidden=false;await cargarAdmin();panel.scrollIntoView({behavior:'smooth'})});document.getElementById('adminCloseBtn').addEventListener('click',()=>panel.hidden=true);document.getElementById('collabCancelEdit').addEventListener('click',()=>document.getElementById('collabForm').reset());
 document.getElementById('collabForm').addEventListener('submit',async e=>{e.preventDefault();const id=document.getElementById('collabId').value||null,nombre=document.getElementById('collabNombre').value.trim(),codigo=document.getElementById('collabCodigo').value.trim()||null;try{await rpc('guardar_colaborador_sede_v1',{p_id:id,p_nombre:nombre,p_codigo:codigo});e.target.reset();document.getElementById('collabId').value='';await Promise.all([cargarAdmin(),cargarTodo()]);document.getElementById('adminMessage').textContent='Colaborador guardado correctamente.'}catch(err){document.getElementById('adminMessage').textContent=err.message}});
 document.addEventListener('click',async e=>{const edit=e.target.closest('[data-edit-collab]');if(edit){const c=JSON.parse(edit.dataset.editCollab);document.getElementById('collabId').value=c.id;document.getElementById('collabNombre').value=c.nombre;document.getElementById('collabCodigo').value=c.codigo;return}const tog=e.target.closest('[data-toggle-collab]');if(tog){try{await rpc('cambiar_estado_colaborador_sede_v1',{p_id:tog.dataset.toggleCollab,p_activo:tog.dataset.newState==='true'});await Promise.all([cargarAdmin(),cargarTodo()])}catch(err){document.getElementById('adminMessage').textContent=err.message}}});
 const activityCatalogForm=document.getElementById('activityCatalogForm');
@@ -1433,7 +1441,7 @@ document.addEventListener('click',async e=>{
 });
 
 async function eliminarRegistroHistorial(tipo,id){
- if(!esAdmin){alert('Solo un administrador puede eliminar registros.');return}
+ if(!puedeEliminar){alert('Solo un administrador puede eliminar registros.');return}
  const etiqueta=tipo==='preparacion'?'preparación de pedidos':'actividad';
  const motivo=prompt(`Escriba el motivo para eliminar este registro de ${etiqueta}:`);
  if(motivo===null)return;
@@ -2107,6 +2115,6 @@ descargarExcelBtn.addEventListener('click',async()=>{
  }
 });
 
-supabase.channel('cronometros-operacion-v302').on('postgres_changes',{event:'*',schema:'public',table:'cronometros'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'historial_preparaciones'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'historial_actividades'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'colaboradores'},()=>{cargarTodo();if(esAdmin)cargarAdmin()}).on('postgres_changes',{event:'*',schema:'public',table:'actividades_catalogo'},()=>{cargarCatalogoActividades().then(()=>cargarTodo());if(esAdmin)cargarAdmin()}).on('postgres_changes',{event:'*',schema:'public',table:'ausencias_personal'},()=>{if(esAdmin)cargarAusenciasAdmin();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'metas_productividad'},()=>{cargarMetas();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'pausas_cronometros'},()=>{if(esAdmin)cargarAuditoria('pausas')}).on('postgres_changes',{event:'*',schema:'public',table:'cierres_diarios'},()=>{cargarEstadoCierre();if(esAdmin)cargarAuditoria('cierres')}).on('postgres_changes',{event:'*',schema:'public',table:'actividad_participaciones'},()=>{cargarTodo();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'preparacion_participaciones'},()=>{cargarTodo();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'errores_preparacion'},()=>{if(prepErrorContext)cargarErroresPreparacionExistentes()}).subscribe();
+supabase.channel('cronometros-operacion-v302').on('postgres_changes',{event:'*',schema:'public',table:'cronometros'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'historial_preparaciones'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'historial_actividades'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'colaboradores'},()=>{cargarTodo();if(esAdmin)cargarAdmin()}).on('postgres_changes',{event:'*',schema:'public',table:'actividades_catalogo'},()=>{cargarCatalogoActividades().then(()=>cargarTodo());if(esAdmin)cargarAdmin()}).on('postgres_changes',{event:'*',schema:'public',table:'ausencias_personal'},()=>{if(puedeCatalogos)cargarAusenciasAdmin();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'metas_productividad'},()=>{cargarMetas();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'pausas_cronometros'},()=>{if(esAdmin)cargarAuditoria('pausas')}).on('postgres_changes',{event:'*',schema:'public',table:'cierres_diarios'},()=>{cargarEstadoCierre();if(esAdmin)cargarAuditoria('cierres')}).on('postgres_changes',{event:'*',schema:'public',table:'actividad_participaciones'},()=>{cargarTodo();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'preparacion_participaciones'},()=>{cargarTodo();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'errores_preparacion'},()=>{if(prepErrorContext)cargarErroresPreparacionExistentes()}).subscribe();
 try{await cargarMetas();await cargarTodo();await actualizarDashboard();if(esAdmin)await cargarAuditoria()}catch(e){document.getElementById('conexion').textContent='No se pudo cargar la información: '+e.message}
 
