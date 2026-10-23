@@ -1539,14 +1539,34 @@ body{
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="apple-touch-icon" type="image/png" href="https://biahonduras.github.io/devoluciones/favicon.png?v=2">
-<style>[data-area-link][hidden],#roleBadge[hidden]{display:none!important}.user-email{display:inline!important}</style><style>#adminOpenBtn[hidden]{display:none!important}.section-nav #adminOpenBtn{background:transparent;border:0;color:inherit;font:inherit;cursor:pointer;padding:10px 12px}.logout-icon{display:inline-flex;align-items:center;justify-content:center;padding:8px!important}</style><style>.app-header{background:#fff!important;color:#17305c!important;box-shadow:0 3px 16px rgba(16,43,81,.08)!important;border-bottom:1px solid #e1e8f0!important}.app-header .brand-copy{border-left-color:#dfe7f1!important}.app-header .brand-copy h1,.app-header .brand-copy div,.app-header .user,.app-header .user-email{color:#17305c!important}.app-header .header-logo{filter:none!important}.app-header .user button{background:#f4f7fb!important;border:1px solid #dfe7f1!important;color:#17305c!important}.app-header #installApp:not([hidden]){display:inline-flex;gap:7px;align-items:center}</style><style>/* Barra de sedes de borde a borde, azul corporativo de Reclamos. */.section-nav{background:#244a86!important;box-shadow:0 0 0 100vmax #244a86!important;clip-path:inset(0 -100vmax);border-radius:0!important;border-left:0!important;border-right:0!important}.section-nav .area-switcher a.current-area{background:#fff!important;color:#244a86!important;border-bottom-color:#fff!important}</style></head>
+<style>[data-area-link][hidden],#roleBadge[hidden]{display:none!important}.user-email{display:inline!important}</style><style>#adminOpenBtn[hidden]{display:none!important}.section-nav #adminOpenBtn{background:transparent;border:0;color:inherit;font:inherit;cursor:pointer;padding:10px 12px}.logout-icon{display:inline-flex;align-items:center;justify-content:center;padding:8px!important}</style><style>.app-header{background:#fff!important;color:#17305c!important;box-shadow:0 3px 16px rgba(16,43,81,.08)!important;border-bottom:1px solid #e1e8f0!important}.app-header .brand-copy{border-left-color:#dfe7f1!important}.app-header .brand-copy h1,.app-header .brand-copy div,.app-header .user,.app-header .user-email{color:#17305c!important}.app-header .header-logo{filter:none!important}.app-header .user button{background:#f4f7fb!important;border:1px solid #dfe7f1!important;color:#17305c!important}.app-header #installApp:not([hidden]){display:inline-flex;gap:7px;align-items:center}</style><style>/* Barra de sedes de borde a borde, azul corporativo de Reclamos. */.section-nav{background:#244a86!important;box-shadow:0 0 0 100vmax #244a86!important;clip-path:inset(0 -100vmax);border-radius:0!important;border-left:0!important;border-right:0!important}.section-nav .area-switcher a.current-area{background:#fff!important;color:#244a86!important;border-bottom-color:#fff!important}</style><style>
+/* Encabezado fijo con las medidas de Reclamo a Proveedores. */
+.app-header{position:sticky!important;top:0!important;z-index:1000!important;min-height:0!important;height:auto!important;overflow:visible!important}
+.bia-header-inner{box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:12px;height:74px;max-width:1440px;padding:0 16px;margin:0 auto}
+.app-header .brand-wrap{float:none!important;padding:0!important;gap:12px!important;min-width:0;flex-shrink:0}
+.app-header .header-logo-frame{box-sizing:border-box;display:flex;align-items:center;flex-shrink:0;width:132px;height:48px;padding:0 10px;background:#fff;border-radius:12px;box-shadow:0 0 0 1px #e2e8f0,0 1px 2px rgba(0,0,0,.05)}
+.app-header .header-logo{display:block;width:100%!important;height:auto!important;margin:0!important;max-width:none!important}
+.app-header .brand-copy{display:block;padding:0!important;border:0!important}
+.app-header .brand-copy h1{font-size:14px!important;line-height:20px!important;margin:0!important;font-weight:700!important;letter-spacing:-.01em}
+.app-header .user{float:none!important;min-height:0!important;min-width:0;padding:0!important;flex-wrap:nowrap!important;gap:8px!important}
+.app-header .user-email{white-space:nowrap;max-width:190px}
+.app-header .user button{flex-shrink:0}
+.section-nav{position:static!important;top:auto!important;z-index:auto!important}
+html{scroll-padding-top:80px}
+@media(min-width:640px){.bia-header-inner{padding:0 24px}}
+@media(min-width:1024px){.bia-header-inner{padding:0 32px}}
+@media(max-width:767px){.app-header .brand-copy{display:none!important}}
+@media(max-width:639px){.app-header #installApp span{display:none}.app-header #installApp{padding:8px!important}.app-header .user{gap:6px!important}.app-header .user-email{max-width:clamp(40px,calc(100vw - 272px),140px)}}
+</style></head>
 <body data-sede="AMT">
 <header class="app-header">
+ <div class="bia-header-inner">
   <div class="brand-wrap">
-    <img class="header-logo" src="./assets/bia-honduras-logo.png" alt="BIA Honduras">
+    <span class="header-logo-frame"><img class="header-logo" src="./assets/bia-honduras-logo.png" alt="BIA Honduras"></span>
     <div class="brand-copy"><div class="brand-eyebrow">BIA HONDURAS · OPERACIONES</div><h1>Control de Tiempos</h1></div>
   </div>
-  <div class="user"><button id="installApp" class="install-btn" hidden><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M10 18h4"/></svg><span>Instalar App</span></button><span id="roleBadge" class="role-badge" hidden>Verificando rol…</span><span id="userEmail" class="user-email"></span><button onclick="window.salir()" aria-label="Cerrar sesión" title="Cerrar sesión" class="logout-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 5H5v14h4M13 8l4 4-4 4M9 12h12"/></svg></button></div>
+  <div class="user"><button id="installApp" class="install-btn" aria-label="Instalar App" title="Instalar App" hidden><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M10 18h4"/></svg><span>Instalar App</span></button><span id="roleBadge" class="role-badge" hidden>Verificando rol…</span><span id="userEmail" class="user-email"></span><button onclick="window.salir()" aria-label="Cerrar sesión" title="Cerrar sesión" class="logout-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 5H5v14h4M13 8l4 4-4 4M9 12h12"/></svg></button></div>
+ </div>
 </header>
 
 <div class="container">
