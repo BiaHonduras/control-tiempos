@@ -1539,14 +1539,14 @@ body{
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="apple-touch-icon" type="image/png" href="https://biahonduras.github.io/devoluciones/favicon.png?v=2">
-<style>[data-area-link][hidden],#roleBadge[hidden]{display:none!important}.user-email{display:inline!important}</style></head>
+<style>[data-area-link][hidden],#roleBadge[hidden]{display:none!important}.user-email{display:inline!important}</style><style>#adminOpenBtn[hidden]{display:none!important}.section-nav #adminOpenBtn{background:transparent;border:0;color:inherit;font:inherit;cursor:pointer;padding:10px 12px}.logout-icon{display:inline-flex;align-items:center;justify-content:center;padding:8px!important}</style></head>
 <body data-sede="SRC">
 <header class="app-header">
   <div class="brand-wrap">
     <img class="header-logo" src="./assets/bia-honduras-logo.png" alt="BIA Honduras">
-    <div class="brand-copy"><div class="brand-eyebrow">BIA HONDURAS · OPERACIONES</div><h1>Control de Tiempos · SRC</h1><div>Productividad, preparación y actividades en tiempo real</div><span class="page-area-badge">Sede SRC</span></div>
+    <div class="brand-copy"><div class="brand-eyebrow">BIA HONDURAS · OPERACIONES</div><h1>Control de Tiempos</h1></div>
   </div>
-  <div class="user"><span id="networkStatus" class="network"></span><span id="userAvatar" class="user-avatar">BI</span><button id="installApp" class="install-btn" hidden>Instalar app</button><span id="roleBadge" class="role-badge" hidden>Verificando rol…</span><span id="userEmail" class="user-email"></span><button id="adminOpenBtn" class="light" type="button" hidden>Administración</button><button onclick="window.salir()">Cerrar sesión</button></div>
+  <div class="user"><span id="userAvatar" class="user-avatar">BI</span><button id="installApp" class="install-btn" hidden>Instalar app</button><span id="roleBadge" class="role-badge" hidden>Verificando rol…</span><span id="userEmail" class="user-email"></span><button onclick="window.salir()" aria-label="Cerrar sesión" title="Cerrar sesión" class="logout-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 5H5v14h4M13 8l4 4-4 4M9 12h12"/></svg></button></div>
 </header>
 
 <div class="container">
@@ -1566,6 +1566,7 @@ body{
   <a href="#reportesExcel"><span>📄 Excel</span></a>
   <a class="admin-nav" href="#absenceAdminSection"><span>👥 Ausencias</span></a>
   <a class="admin-nav" href="#auditoriaAdminSection"><span>🔎 Auditoría</span></a>
+  <button id="adminOpenBtn" class="light" type="button" hidden>Administración</button>
 <div class="area-switcher" role="group" aria-label="Sedes">
   <a data-area-link="sps" href="./cronometros.html">SPS</a>
   <a data-area-link="cba" href="./cba.html">CBA</a>
@@ -1970,7 +1971,7 @@ body{
   </section>
 </div>
 
-<footer class="app-footer"><img src="./assets/bia-honduras-logo.png" alt="BIA Honduras"> Control de Tiempos · PWA v3.1.2</footer>
+<footer class="app-footer"><img src="./assets/bia-honduras-logo.png" alt="BIA Honduras"></footer>
 <script src="./vendor/jszip.min.js"></script>
 <script src="./vendor/exceljs-4.4.0.min.js"></script>
 <script type="module" src="./cronometros.js?v=20261022-sedes"></script>
