@@ -579,7 +579,8 @@ async function verificarAdmin(userId){
  document.body.classList.toggle('catalog-manager',puedeCatalogos);
  document.body.classList.toggle('data-administrator',puedeEliminar);
  document.getElementById('metasAdminSection').hidden=!puedeEliminar;
- for(const id of ['absenceAdminSection','cierreAdminSection']){const el=document.getElementById(id);if(el)el.hidden=!puedeCatalogos}
+ document.getElementById('absenceAdminSection').hidden=!esAdmin;
+ for(const id of ['cierreAdminSection']){const el=document.getElementById(id);if(el)el.hidden=!puedeCatalogos}
  document.getElementById('adminOpenBtn').hidden=!puedeCatalogos;
  document.getElementById('viewerNotice').hidden=esAdmin||esMaestro;
  document.getElementById('roleBadge').textContent=esMaestro?'Maestro':esAdmin?`Administrador ${SEDE_ACTUAL}`:puedeCierre?'Consulta + Cierre':'Solo lectura';
@@ -587,7 +588,7 @@ async function verificarAdmin(userId){
  const masterSection=document.getElementById('userAccessAdminSection');if(masterSection)masterSection.hidden=true;
  const sedeInput=document.getElementById('accessSede');if(sedeInput){sedeInput.value=SEDE_ACTUAL;Array.from(sedeInput.options).forEach(o=>o.disabled=!esMaestro&&o.value!==SEDE_ACTUAL);sedeInput.disabled=!esMaestro;}
  renderActivosSuperiores();
- if(puedeCatalogos)cargarAusenciasAdmin();
+ if(esAdmin)cargarAusenciasAdmin();
  await cargarEstadoCierre();
 }
 async function cargarAdmin(){
@@ -879,7 +880,7 @@ async function cargarAusenciasAdmin(){
    <td>${Number(a.horas_ausencia).toFixed(2)}</td>
    <td>${esc(a.motivo||'')}</td>
    <td>${esc(a.registrado_por_email||'')}</td>
-   <td><button class="absence-delete" data-delete-absence="${a.id}">Eliminar</button></td>
+   <td>${puedeCatalogos?`<button class="absence-delete" data-delete-absence="${a.id}">Eliminar</button>`:''}</td>
   </tr>`).join('');
 }
 
@@ -887,7 +888,7 @@ absenceForm?.addEventListener('submit',async e=>{
  e.preventDefault();
 
  if(!esAdmin){
-  return alert('Solo un administrador puede registrar ausencias.');
+  return alert('Su perfil no permite registrar ausencias.');
  }
 
  const colaboradorId=document.getElementById('absenceColaborador')?.value||'';
@@ -934,7 +935,7 @@ absenceForm?.addEventListener('submit',async e=>{
   const mensaje=String(err?.message||err||'Error desconocido');
 
   if(mensaje.includes('SOLO_ADMINISTRADOR')){
-   absenceStatus.textContent='No se pudo guardar: este usuario no tiene permiso de administrador.';
+   absenceStatus.textContent='No se pudo guardar: su perfil no permite registrar ausencias en esta sede.';
   }else if(mensaje.includes('DIA_SIN_JORNADA')){
    absenceStatus.textContent='No se pudo guardar: la fecha seleccionada no tiene jornada laboral.';
   }else if(mensaje.includes('HORAS_AUSENCIA_INVALIDAS')){
@@ -956,8 +957,8 @@ document.addEventListener('click',async e=>{
  const btn=e.target.closest('[data-delete-absence]');
  if(!btn)return;
 
- if(!esAdmin){
-  return alert('Solo un administrador puede eliminar ausencias.');
+ if(!puedeCatalogos){
+  return alert('Su perfil no permite eliminar ausencias.');
  }
 
  if(!confirm('¿Eliminar este registro de ausencia? El dashboard volverá a calcular las horas disponibles.'))return;
@@ -2115,6 +2116,6 @@ descargarExcelBtn.addEventListener('click',async()=>{
  }
 });
 
-supabase.channel('cronometros-operacion-v302').on('postgres_changes',{event:'*',schema:'public',table:'cronometros'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'historial_preparaciones'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'historial_actividades'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'colaboradores'},()=>{cargarTodo();if(esAdmin)cargarAdmin()}).on('postgres_changes',{event:'*',schema:'public',table:'actividades_catalogo'},()=>{cargarCatalogoActividades().then(()=>cargarTodo());if(esAdmin)cargarAdmin()}).on('postgres_changes',{event:'*',schema:'public',table:'ausencias_personal'},()=>{if(puedeCatalogos)cargarAusenciasAdmin();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'metas_productividad'},()=>{cargarMetas();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'pausas_cronometros'},()=>{if(esAdmin)cargarAuditoria('pausas')}).on('postgres_changes',{event:'*',schema:'public',table:'cierres_diarios'},()=>{cargarEstadoCierre();if(esAdmin)cargarAuditoria('cierres')}).on('postgres_changes',{event:'*',schema:'public',table:'actividad_participaciones'},()=>{cargarTodo();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'preparacion_participaciones'},()=>{cargarTodo();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'errores_preparacion'},()=>{if(prepErrorContext)cargarErroresPreparacionExistentes()}).subscribe();
+supabase.channel('cronometros-operacion-v302').on('postgres_changes',{event:'*',schema:'public',table:'cronometros'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'historial_preparaciones'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'historial_actividades'},()=>cargarTodo()).on('postgres_changes',{event:'*',schema:'public',table:'colaboradores'},()=>{cargarTodo();if(esAdmin)cargarAdmin()}).on('postgres_changes',{event:'*',schema:'public',table:'actividades_catalogo'},()=>{cargarCatalogoActividades().then(()=>cargarTodo());if(esAdmin)cargarAdmin()}).on('postgres_changes',{event:'*',schema:'public',table:'ausencias_personal'},()=>{if(esAdmin)cargarAusenciasAdmin();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'metas_productividad'},()=>{cargarMetas();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'pausas_cronometros'},()=>{if(esAdmin)cargarAuditoria('pausas')}).on('postgres_changes',{event:'*',schema:'public',table:'cierres_diarios'},()=>{cargarEstadoCierre();if(esAdmin)cargarAuditoria('cierres')}).on('postgres_changes',{event:'*',schema:'public',table:'actividad_participaciones'},()=>{cargarTodo();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'preparacion_participaciones'},()=>{cargarTodo();actualizarDashboard()}).on('postgres_changes',{event:'*',schema:'public',table:'errores_preparacion'},()=>{if(prepErrorContext)cargarErroresPreparacionExistentes()}).subscribe();
 try{await cargarMetas();await cargarTodo();await actualizarDashboard();if(esAdmin)await cargarAuditoria()}catch(e){document.getElementById('conexion').textContent='No se pudo cargar la información: '+e.message}
 
