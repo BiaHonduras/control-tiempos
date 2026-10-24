@@ -5,7 +5,7 @@ export const INTRANET_APPS=[
  {id:'devoluciones',title:'Control de Devoluciones',category:'SEGUIMIENTO',description:'Ingresa devoluciones, consulta sus gestiones y prepara las entregas.',path:'/devoluciones/index.html',icon:'returns'},
  {id:'service-desk',title:'Service Desk GBS IT',category:'TICKETS',path:'https://sdp.cbc.co/app/itdesk/HomePage.do',icon:'support',external:true},
  {id:'reporteria',title:'Reportería BIA',category:'DATA',path:'http://10.240.6.232/Reports/browse',icon:'chart',external:true},
- {id:'connect',title:'Connect',category:'AUSENTISMO',path:'https://performancemanager4.successfactors.com/sf/home?bplte_company=embotelldP#/',icon:'people',external:true},
+ {id:'connect',title:'Connect',category:'AUSENTISMO',path:'https://a7zcpokuc.accounts.cloud.sap/saml2/idp/sso?sp=https://www.successfactors.com/embotelldP&idp=https://a7zcpokuc.accounts.ondemand.com',icon:'people',external:true},
  {id:'office',title:'Inicio Office 365',category:'OFFICE',path:'https://www.office.com/',icon:'office',external:true}
 ];
 const sitePages={SPS:'cronometros.html',CBA:'cba.html',SRC:'src.html',TGU:'tgu.html',AMT:'amt.html'};

@@ -1,6 +1,6 @@
 import {createUserManagement} from './intranet-users.mjs?v=20261023-usuarios';
 import {supabase,iniciarSesion,cerrarSesion} from './supabase-config.js';
-import {applicationsFor,applicationHref} from './intranet-apps.mjs?v=20261024-accesos';
+import {applicationsFor,applicationHref} from './intranet-apps.mjs?v=20261024-connect';
 const $=id=>document.getElementById(id),escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const icons={clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',container:'<path d="M3 5h18v14H3zM7 5v14M12 5v14M17 5v14M1 5h2m18 0h2M1 19h2m18 0h2"/>',support:'<path d="M4 13v-1a8 8 0 0 1 16 0v1M4 12H2v7h4v-7H4m16 0h2v7h-4v-7h2m0 7c0 2-2 3-5 3h-3"/>',chart:'<path d="M3 3v18h18M7 17v-5m5 5V7m5 10V4"/>',people:'<circle cx="9" cy="7" r="4"/><path d="M2 21v-3a7 7 0 0 1 14 0v3m0-18a4 4 0 0 1 0 8m3 3a7 7 0 0 1 3 6"/>',office:'<path d="m4 5 10-3 6 3v14l-6 3-10-3zM14 2v20M4 5l10 3 6-3M4 19l10-3 6 3"/>',returns:'<path d="m8 4-5 5 5 5M3 9h11a6 6 0 0 1 0 12h-4"/>'};
 const icon=name=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name]||icons.container}</svg>`;
