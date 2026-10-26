@@ -7,7 +7,7 @@ export const INTRANET_APPS=[
  {id:'reporteria',title:'Reportería BIA',category:'DATA',path:'http://10.240.6.232/Reports/browse',icon:'chart',external:true},
  {id:'connect',title:'Connect',category:'AUSENTISMO',path:'https://a7zcpokuc.accounts.cloud.sap/saml2/idp/sso?sp=https://www.successfactors.com/embotelldP&idp=https://a7zcpokuc.accounts.ondemand.com',icon:'people',external:true},
  {id:'office',title:'Inicio Office 365',category:'OFFICE',path:'https://www.office.com/',icon:'office',external:true},
- {id:'tasa-cambio',title:'TASA DE CAMBIO',category:'BCH',path:'https://www.bch.hn/estadisticos/GIE/LIBTipo%20de%20cambio/Precio%20Promedio%20Diario%20del%20D%C3%B3lar.xlsx?d=w0c6fd2b1030b40608d2bf6683eee40b4',icon:'chart',external:true}
+ {id:'tasa-cambio',title:'Tasa de Cambio',category:'BCH',path:'https://www.bch.hn/estadisticos/GIE/LIBTipo%20de%20cambio/Precio%20Promedio%20Diario%20del%20D%C3%B3lar.xlsx?d=w0c6fd2b1030b40608d2bf6683eee40b4',icon:'chart',external:true}
 ];
 const sitePages={SPS:'cronometros.html',CBA:'cba.html',SRC:'src.html',TGU:'tgu.html',AMT:'amt.html'};
 export function applicationsFor(sedes=[],allowed=INTRANET_APPS.map(app=>app.id)){const site=['SPS','CBA','SRC','TGU','AMT'].find(s=>sedes.includes(s));return INTRANET_APPS.filter(app=>app.external||allowed.includes(app.id)).map(app=>({...app,path:app.id==='tiempos'&&site?'/control-tiempos/'+sitePages[site]:app.path}));}
