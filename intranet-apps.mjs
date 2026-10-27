@@ -3,7 +3,7 @@ export const INTRANET_APPS=[
  {id:'tiempos',title:'Control de Tiempos',category:'PRODUCTIVIDAD',description:'Coordina la preparación, las actividades y los tiempos de tu equipo.',path:'/control-tiempos/cronometros.html',icon:'clock'},
  {id:'contenedores',title:'Control de Reclamo a Proveedores',category:'RECEPCIÓN',description:'Registra recepciones y da seguimiento a reclamos y evidencias.',path:'/contenedores/index.html',icon:'container'},
  {id:'devoluciones',title:'Control de Devoluciones',category:'SEGUIMIENTO',description:'Ingresa devoluciones, consulta sus gestiones y prepara las entregas.',path:'/devoluciones/index.html',icon:'returns'},
- {id:'inventarios',title:'Control de Inventarios',category:'INVENTARIOS',path:'/inventarios/dashboard.html',icon:'container'},
+ {id:'inventarios',title:'Control de Inventarios',category:'INVENTARIOS',path:'/inventarios/dashboard.html',icon:'inventory'},
  {id:'service-desk',title:'Service Desk GBS IT',category:'TICKETS',path:'https://sdp.cbc.co/app/itdesk/HomePage.do',icon:'support',external:true},
  {id:'reporteria',title:'Reportería BIA',category:'DATA',path:'http://10.240.6.232/Reports/browse',icon:'chart',external:true},
  {id:'connect',title:'Connect',category:'AUSENTISMO',path:'https://a7zcpokuc.accounts.cloud.sap/saml2/idp/sso?sp=https://www.successfactors.com/embotelldP&idp=https://a7zcpokuc.accounts.ondemand.com',icon:'people',external:true},
