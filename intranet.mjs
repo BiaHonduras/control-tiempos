@@ -1,4 +1,4 @@
-import {createUserManagement} from './intranet-users.mjs?v=20261023-usuarios';
+import {createUserManagement} from './intranet-users.mjs?v=20261027-password-panel';
 import {supabase,iniciarSesion,cerrarSesion} from './supabase-config.js';
 import {applicationsFor,applicationHref} from './intranet-apps.mjs?v=20261026-tasa-titulo';
 const $=id=>document.getElementById(id),escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
